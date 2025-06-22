@@ -5,10 +5,15 @@ import Observation
 import SwiftUI
 import UIKit
 
+protocol SyncDelegate: AnyObject {
+  func receivedEvent(_ event: SyncStore.Event)
+}
+
 @Observable
 final class SyncStore: NSObject, MCSessionDelegate, MCBrowserViewControllerDelegate,
   MCAdvertiserAssistantDelegate, MCNearbyServiceAdvertiserDelegate
 {
+  weak var delegate: SyncDelegate?
 
   enum Event: String {
     case takePhoto
@@ -121,6 +126,8 @@ final class SyncStore: NSObject, MCSessionDelegate, MCBrowserViewControllerDeleg
   ) {
     let message = String(data: data, encoding: .utf8) ?? "Invalid UTF-8"
     logger.info("Received data from '\(peerID.displayName)': \(message)")
+    guard let event = Event(rawValue: message) else { return }
+    delegate?.receivedEvent(event)
   }
 
   func session(

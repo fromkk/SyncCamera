@@ -6,7 +6,7 @@ import SwiftUI
 import UIKit
 
 @Observable
-final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate {
+final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
   private let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "CameraStore")
 
   let session = AVCaptureSession()
@@ -35,6 +35,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate {
 
   override init() {
     super.init()
+    syncStore.delegate = self
     configuration()
   }
 
@@ -162,15 +163,18 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate {
     }
   }
 
-  func takePhoto() {
-    logger.info("\(#function)")
-    syncStore.sendEvent(.takePhoto)
-
+  private func takePhoto() {
     queue.async { [weak self] in
       guard let self else { return }
       let settings = AVCapturePhotoSettings()
       self.photoOutput.capturePhoto(with: settings, delegate: self)
     }
+  }
+
+  func takePhotoFromUser() {
+    logger.info("\(#function)")
+    syncStore.sendEvent(.takePhoto)
+    takePhoto()
   }
 
   // MARK: - AVCapturePhotoCaptureDelegate
@@ -192,6 +196,15 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate {
         let request = PHAssetCreationRequest.forAsset()
         request.addResource(with: .photo, data: data, options: nil)
       }
+    }
+  }
+
+  // MARK: - SyncDelegate
+
+  func receivedEvent(_ event: SyncStore.Event) {
+    switch event {
+    case .takePhoto:
+      takePhoto()
     }
   }
 }
@@ -224,7 +237,7 @@ struct CameraView: View {
         }
 
         Button {
-          store.takePhoto()
+          store.takePhotoFromUser()
         } label: {
           Label("Shutter", systemImage: "camera.fill")
             .labelStyle(.iconOnly)
