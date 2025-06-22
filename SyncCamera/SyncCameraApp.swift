@@ -9,9 +9,11 @@ import SwiftUI
 
 @main
 struct SyncCameraApp: App {
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
+  let contentStore: ContentStore = .init()
+
+  var body: some Scene {
+    WindowGroup {
+      ContentView(store: contentStore)
     }
+  }
 }
