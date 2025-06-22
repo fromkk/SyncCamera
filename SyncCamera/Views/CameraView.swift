@@ -185,7 +185,13 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate {
     if let error {
       self.error = error
     } else {
-      photoData = photo.fileDataRepresentation()
+      guard let data = photo.fileDataRepresentation() else {
+        return
+      }
+      PHPhotoLibrary.shared().performChanges {
+        let request = PHAssetCreationRequest.forAsset()
+        request.addResource(with: .photo, data: data, options: nil)
+      }
     }
   }
 }

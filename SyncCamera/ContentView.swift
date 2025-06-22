@@ -10,40 +10,32 @@ import Observation
 import SwiftUI
 
 @Observable
-final class ContentStore {
-  func checkPermission() {
-    switch AVCaptureDevice.authorizationStatus(for: .video) {
-    case .notDetermined:
-      cameraPermission = .notDetermined
-    case .authorized:
-      cameraPermission = .authorized
-      cameraStore = CameraStore()
-    case .denied, .restricted:
-      cameraPermission = .denied
-    @unknown default:
-      cameraPermission = nil
-    }
-  }
-
-  func requestPermission() {
-    Task {
-      if await AVCaptureDevice.requestAccess(for: .video) {
-        cameraPermission = .authorized
-        cameraStore = CameraStore()
-      } else {
-        cameraPermission = .denied
-      }
-    }
-  }
-
-  enum CameraPermission {
-    case notDetermined
-    case authorized
-    case denied
-  }
-
-  private(set) var cameraPermission: CameraPermission?
+final class ContentStore: PermissionStoreDelegate {
+  let permissionStore: PermissionStore
   private(set) var cameraStore: CameraStore?
+
+  init(permissionStore: PermissionStore, cameraStore: CameraStore? = nil) {
+    self.permissionStore = permissionStore
+    self.cameraStore = cameraStore
+
+    self.permissionStore.delegate = self
+  }
+
+  func checkPermission() {
+    if permissionStore.cameraPermission == .authorized,
+      permissionStore.addLibraryPermission == .authorized
+    {
+      if cameraStore == nil {
+        self.cameraStore = .init()
+      }
+    } else {
+      self.cameraStore = nil
+    }
+  }
+
+  func permissionUpdated() {
+    checkPermission()
+  }
 }
 
 struct ContentView: View {
@@ -54,21 +46,10 @@ struct ContentView: View {
 
   var body: some View {
     Group {
-      if let permission = store.cameraPermission {
-        switch permission {
-        case .notDetermined:
-          CameraPermissionNotDetermined {
-            store.requestPermission()
-          }
-        case .authorized:
-          if let cameraStore = store.cameraStore {
-            CameraView(store: cameraStore)
-          } else {
-            Text("Unexpected...")
-          }
-        case .denied:
-          CameraPermissionDenied()
-        }
+      if let cameraStore = store.cameraStore {
+        CameraView(store: cameraStore)
+      } else {
+        PermissionView(store: store.permissionStore)
       }
     }
     .onAppear {
@@ -78,5 +59,5 @@ struct ContentView: View {
 }
 
 #Preview {
-  ContentView(store: ContentStore())
+  ContentView(store: ContentStore(permissionStore: PermissionStore()))
 }
