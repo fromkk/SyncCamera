@@ -16,6 +16,9 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate {
   private(set) var captureMode: CaptureMode = .photo
   private let queue = DispatchQueue(label: "me.fromkk.SyncCamera.CameraStore")
 
+  var isSyncViewPresented: Bool = false
+  let syncStore: SyncStore = .init()
+
   var previewLayer: AVCaptureVideoPreviewLayer?
 
   enum CaptureMode {
@@ -131,6 +134,10 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate {
 
   func resume() {
     logger.info("\(#function)")
+    if !syncStore.isAdvertising {
+      syncStore.startAdvertising()
+    }
+
     queue.async { [weak self] in
       guard let self, !self.session.isRunning else {
         self?.logger.info("already running")
@@ -142,6 +149,10 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate {
 
   func pause() {
     logger.info("\(#function)")
+    if syncStore.isAdvertising {
+      syncStore.stopAdvertising()
+    }
+
     queue.async { [weak self] in
       guard let self, self.session.isRunning else {
         self?.logger.info("already stopping")
@@ -153,6 +164,8 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate {
 
   func takePhoto() {
     logger.info("\(#function)")
+    syncStore.sendEvent(.takePhoto)
+
     queue.async { [weak self] in
       guard let self else { return }
       let settings = AVCapturePhotoSettings()
@@ -197,33 +210,45 @@ struct CameraView: View {
   @Environment(\.scenePhase) var scenePhase
 
   var body: some View {
-    ZStack(alignment: .bottom) {
-      if let previewLayer = store.previewLayer {
-        CameraPreview(previewLayer: previewLayer)
-          .frame(maxWidth: .infinity, maxHeight: .infinity)
-      }
+    NavigationStack {
+      ZStack(alignment: .bottom) {
+        if let previewLayer = store.previewLayer {
+          CameraPreview(previewLayer: previewLayer)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
 
-      Button {
-        store.takePhoto()
-      } label: {
-        Label("Shutter", systemImage: "camera.fill")
-          .labelStyle(.iconOnly)
+        Button {
+          store.takePhoto()
+        } label: {
+          Label("Shutter", systemImage: "camera.fill")
+            .labelStyle(.iconOnly)
+        }
+        .frame(width: 80, height: 80)
+        .padding(.bottom, 16)
       }
-      .frame(width: 80, height: 80)
-      .padding(.bottom, 16)
-    }
-    .onAppear {
-      store.resume()
-    }
-    .onDisappear {
-      store.pause()
-    }
-    .onChange(of: scenePhase) { oldValue, newValue in
-      switch newValue {
-      case .active:
+      .toolbar {
+        ToolbarItem(placement: .primaryAction) {
+          Button {
+            store.isSyncViewPresented.toggle()
+          } label: {
+            Label("Sync", systemImage: "arrow.trianglehead.2.clockwise.rotate.90")
+              .labelStyle(.iconOnly)
+          }
+        }
+      }
+      .onAppear {
         store.resume()
-      default:
+      }
+      .onDisappear {
         store.pause()
+      }
+      .onChange(of: scenePhase) { oldValue, newValue in
+        switch newValue {
+        case .active:
+          store.resume()
+        default:
+          store.pause()
+        }
       }
     }
     .alert(
@@ -244,6 +269,9 @@ struct CameraView: View {
           )
         }
       )
+    }
+    .sheet(isPresented: $store.isSyncViewPresented) {
+      MultipeerBrowserView(store: store.syncStore)
     }
   }
 }
