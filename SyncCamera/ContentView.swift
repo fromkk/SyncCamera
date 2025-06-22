@@ -17,6 +17,7 @@ final class ContentStore {
       cameraPermission = .notDetermined
     case .authorized:
       cameraPermission = .authorized
+      cameraStore = CameraStore()
     case .denied, .restricted:
       cameraPermission = .denied
     @unknown default:
@@ -28,6 +29,7 @@ final class ContentStore {
     Task {
       if await AVCaptureDevice.requestAccess(for: .video) {
         cameraPermission = .authorized
+        cameraStore = CameraStore()
       } else {
         cameraPermission = .denied
       }
@@ -41,6 +43,7 @@ final class ContentStore {
   }
 
   private(set) var cameraPermission: CameraPermission?
+  private(set) var cameraStore: CameraStore?
 }
 
 struct ContentView: View {
@@ -58,7 +61,11 @@ struct ContentView: View {
             store.requestPermission()
           }
         case .authorized:
-          Text("Show Camera")
+          if let cameraStore = store.cameraStore {
+            CameraView(store: cameraStore)
+          } else {
+            Text("Unexpected...")
+          }
         case .denied:
           CameraPermissionDenied()
         }
