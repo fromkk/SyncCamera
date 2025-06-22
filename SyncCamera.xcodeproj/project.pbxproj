@@ -1,0 +1,563 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXContainerItemProxy section */
+		ADA3CBD42E07FB39003F0A07 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = ADA3CBBE2E07FB37003F0A07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = ADA3CBC52E07FB37003F0A07;
+			remoteInfo = SyncCamera;
+		};
+		ADA3CBDE2E07FB39003F0A07 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = ADA3CBBE2E07FB37003F0A07 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = ADA3CBC52E07FB37003F0A07;
+			remoteInfo = SyncCamera;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		ADA3CBC62E07FB37003F0A07 /* SyncCamera.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SyncCamera.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		ADA3CBD32E07FB39003F0A07 /* SyncCameraTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SyncCameraTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		ADA3CBDD2E07FB39003F0A07 /* SyncCameraUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SyncCameraUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		ADA3CBC82E07FB37003F0A07 /* SyncCamera */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SyncCamera;
+			sourceTree = "<group>";
+		};
+		ADA3CBD62E07FB39003F0A07 /* SyncCameraTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SyncCameraTests;
+			sourceTree = "<group>";
+		};
+		ADA3CBE02E07FB39003F0A07 /* SyncCameraUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SyncCameraUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		ADA3CBC32E07FB37003F0A07 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		ADA3CBD02E07FB39003F0A07 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		ADA3CBDA2E07FB39003F0A07 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		ADA3CBBD2E07FB37003F0A07 = {
+			isa = PBXGroup;
+			children = (
+				ADA3CBC82E07FB37003F0A07 /* SyncCamera */,
+				ADA3CBD62E07FB39003F0A07 /* SyncCameraTests */,
+				ADA3CBE02E07FB39003F0A07 /* SyncCameraUITests */,
+				ADA3CBC72E07FB37003F0A07 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		ADA3CBC72E07FB37003F0A07 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				ADA3CBC62E07FB37003F0A07 /* SyncCamera.app */,
+				ADA3CBD32E07FB39003F0A07 /* SyncCameraTests.xctest */,
+				ADA3CBDD2E07FB39003F0A07 /* SyncCameraUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		ADA3CBC52E07FB37003F0A07 /* SyncCamera */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = ADA3CBE72E07FB39003F0A07 /* Build configuration list for PBXNativeTarget "SyncCamera" */;
+			buildPhases = (
+				ADA3CBC22E07FB37003F0A07 /* Sources */,
+				ADA3CBC32E07FB37003F0A07 /* Frameworks */,
+				ADA3CBC42E07FB37003F0A07 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				ADA3CBC82E07FB37003F0A07 /* SyncCamera */,
+			);
+			name = SyncCamera;
+			packageProductDependencies = (
+			);
+			productName = SyncCamera;
+			productReference = ADA3CBC62E07FB37003F0A07 /* SyncCamera.app */;
+			productType = "com.apple.product-type.application";
+		};
+		ADA3CBD22E07FB39003F0A07 /* SyncCameraTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = ADA3CBEA2E07FB39003F0A07 /* Build configuration list for PBXNativeTarget "SyncCameraTests" */;
+			buildPhases = (
+				ADA3CBCF2E07FB39003F0A07 /* Sources */,
+				ADA3CBD02E07FB39003F0A07 /* Frameworks */,
+				ADA3CBD12E07FB39003F0A07 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				ADA3CBD52E07FB39003F0A07 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				ADA3CBD62E07FB39003F0A07 /* SyncCameraTests */,
+			);
+			name = SyncCameraTests;
+			packageProductDependencies = (
+			);
+			productName = SyncCameraTests;
+			productReference = ADA3CBD32E07FB39003F0A07 /* SyncCameraTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		ADA3CBDC2E07FB39003F0A07 /* SyncCameraUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = ADA3CBED2E07FB39003F0A07 /* Build configuration list for PBXNativeTarget "SyncCameraUITests" */;
+			buildPhases = (
+				ADA3CBD92E07FB39003F0A07 /* Sources */,
+				ADA3CBDA2E07FB39003F0A07 /* Frameworks */,
+				ADA3CBDB2E07FB39003F0A07 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				ADA3CBDF2E07FB39003F0A07 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				ADA3CBE02E07FB39003F0A07 /* SyncCameraUITests */,
+			);
+			name = SyncCameraUITests;
+			packageProductDependencies = (
+			);
+			productName = SyncCameraUITests;
+			productReference = ADA3CBDD2E07FB39003F0A07 /* SyncCameraUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		ADA3CBBE2E07FB37003F0A07 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1640;
+				LastUpgradeCheck = 1640;
+				TargetAttributes = {
+					ADA3CBC52E07FB37003F0A07 = {
+						CreatedOnToolsVersion = 16.4;
+					};
+					ADA3CBD22E07FB39003F0A07 = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = ADA3CBC52E07FB37003F0A07;
+					};
+					ADA3CBDC2E07FB39003F0A07 = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = ADA3CBC52E07FB37003F0A07;
+					};
+				};
+			};
+			buildConfigurationList = ADA3CBC12E07FB37003F0A07 /* Build configuration list for PBXProject "SyncCamera" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = ADA3CBBD2E07FB37003F0A07;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = ADA3CBC72E07FB37003F0A07 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				ADA3CBC52E07FB37003F0A07 /* SyncCamera */,
+				ADA3CBD22E07FB39003F0A07 /* SyncCameraTests */,
+				ADA3CBDC2E07FB39003F0A07 /* SyncCameraUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		ADA3CBC42E07FB37003F0A07 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		ADA3CBD12E07FB39003F0A07 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		ADA3CBDB2E07FB39003F0A07 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		ADA3CBC22E07FB37003F0A07 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		ADA3CBCF2E07FB39003F0A07 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		ADA3CBD92E07FB39003F0A07 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		ADA3CBD52E07FB39003F0A07 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = ADA3CBC52E07FB37003F0A07 /* SyncCamera */;
+			targetProxy = ADA3CBD42E07FB39003F0A07 /* PBXContainerItemProxy */;
+		};
+		ADA3CBDF2E07FB39003F0A07 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = ADA3CBC52E07FB37003F0A07 /* SyncCamera */;
+			targetProxy = ADA3CBDE2E07FB39003F0A07 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		ADA3CBE52E07FB39003F0A07 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = K84E4S7G4C;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		ADA3CBE62E07FB39003F0A07 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = K84E4S7G4C;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		ADA3CBE82E07FB39003F0A07 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = K84E4S7G4C;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = me.fromkk.SyncCamera;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		ADA3CBE92E07FB39003F0A07 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = K84E4S7G4C;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = me.fromkk.SyncCamera;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		ADA3CBEB2E07FB39003F0A07 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = K84E4S7G4C;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = me.fromkk.SyncCameraTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SyncCamera.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SyncCamera";
+			};
+			name = Debug;
+		};
+		ADA3CBEC2E07FB39003F0A07 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = K84E4S7G4C;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = me.fromkk.SyncCameraTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SyncCamera.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SyncCamera";
+			};
+			name = Release;
+		};
+		ADA3CBEE2E07FB39003F0A07 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = K84E4S7G4C;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = me.fromkk.SyncCameraUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = SyncCamera;
+			};
+			name = Debug;
+		};
+		ADA3CBEF2E07FB39003F0A07 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = K84E4S7G4C;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = me.fromkk.SyncCameraUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = SyncCamera;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		ADA3CBC12E07FB37003F0A07 /* Build configuration list for PBXProject "SyncCamera" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				ADA3CBE52E07FB39003F0A07 /* Debug */,
+				ADA3CBE62E07FB39003F0A07 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		ADA3CBE72E07FB39003F0A07 /* Build configuration list for PBXNativeTarget "SyncCamera" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				ADA3CBE82E07FB39003F0A07 /* Debug */,
+				ADA3CBE92E07FB39003F0A07 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		ADA3CBEA2E07FB39003F0A07 /* Build configuration list for PBXNativeTarget "SyncCameraTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				ADA3CBEB2E07FB39003F0A07 /* Debug */,
+				ADA3CBEC2E07FB39003F0A07 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		ADA3CBED2E07FB39003F0A07 /* Build configuration list for PBXNativeTarget "SyncCameraUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				ADA3CBEE2E07FB39003F0A07 /* Debug */,
+				ADA3CBEF2E07FB39003F0A07 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = ADA3CBBE2E07FB37003F0A07 /* Project object */;
+}

@@ -1,0 +1,17 @@
+//
+//  SyncCameraApp.swift
+//  SyncCamera
+//
+//  Created by Kazuya Ueoka on 2025/06/22.
+//
+
+import SwiftUI
+
+@main
+struct SyncCameraApp: App {
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
