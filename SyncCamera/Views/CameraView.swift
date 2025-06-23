@@ -5,40 +5,54 @@ import Photos
 import SwiftUI
 import UIKit
 
+/// カメラの操作や設定、撮影、同期処理などを管理するクラス
 @Observable
 final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
+  /// ログ出力用のLogger（デバッグやエラー記録用）
   private let logger = Logger(
     subsystem: Bundle.main.bundleIdentifier!,
     category: "CameraStore"
   )
 
+  /// カメラのキャプチャセッションを管理
   let session = AVCaptureSession()
+  /// 現在使用中のビデオ入力デバイス
   var currentVideoInput: AVCaptureDeviceInput?
+  /// 写真撮影用の出力
   private let photoOutput = AVCapturePhotoOutput()
+  /// エラー情報を保持
   var error: (any Error)?
+  /// 現在のキャプチャモード（写真/動画）
   private(set) var captureMode: CaptureMode = .photo
+  /// カメラ処理用のシリアルキュー
   private let queue = DispatchQueue(label: "me.fromkk.SyncCamera.CameraStore")
 
+  /// 同期画面の表示状態
   var isSyncViewPresented: Bool = false
+  /// 同期処理を管理するストア
   let syncStore: SyncStore = .init()
 
+  /// プレビュー表示用のレイヤー
   var previewLayer: AVCaptureVideoPreviewLayer?
 
   /// 設定項目などの表示・非表示
   var isConfigurationsVisible: Bool = false
 
+  /// キャプチャモード（写真/動画）の定義
   enum CaptureMode {
-    case photo
-    case video
+    case photo  /// 写真撮影モード
+    case video  /// 動画撮影モード
   }
 
+  /// カメラ関連のエラー定義
   enum CameraError: Error {
-    case inputDeviceNotFound
-    case couldntAddVideoDataOutput
-    case couldntAddPhotoOutput
-    case couldntSetPreset
+    case inputDeviceNotFound      /// 入力デバイスが見つからない
+    case couldntAddVideoDataOutput /// ビデオ出力の追加に失敗
+    case couldntAddPhotoOutput    /// 写真出力の追加に失敗
+    case couldntSetPreset         /// プリセット設定に失敗
   }
 
+  /// CameraStoreの初期化処理。SyncDelegateの設定とカメラ利用可の場合の構成処理
   override init() {
     super.init()
     syncStore.delegate = self
@@ -47,6 +61,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     }
   }
 
+  /// カメラセッションの構成を行う（入力・出力の追加、プリセット設定など）
   private func configuration() {
     logger.info("\(#function)")
     queue.async { [weak self] in
@@ -98,6 +113,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     }
   }
 
+  /// 入力デバイス（カメラ）を切り替える
   func changeDeviceInput(_ device: AVCaptureDevice) {
     logger.info("\(#function)")
     guard isCameraAvailable else { return }
@@ -127,6 +143,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     }
   }
 
+  /// カメラが利用可能かどうかを判定
   var isCameraAvailable: Bool {
     #if targetEnvironment(simulator)
       return false
@@ -145,6 +162,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
   }
 
   // MARK: - Device Sessions
+  /// 背面カメラのデバイス探索セッション
   let backVideoDeviceDiscoverySession = AVCaptureDevice.DiscoverySession(
     deviceTypes: [
       .builtInTripleCamera, .builtInDualWideCamera, .builtInDualCamera,
@@ -154,12 +172,14 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     position: .back
   )
 
+  /// 前面カメラのデバイス探索セッション
   let frontVideoDeviceDiscoverySession = AVCaptureDevice.DiscoverySession(
     deviceTypes: [.builtInWideAngleCamera],
     mediaType: .video,
     position: .front
   )
 
+  /// カメラセッションの再開処理（同期広告も開始）
   func resume() {
     logger.info("\(#function)")
     guard isCameraAvailable else { return }
@@ -177,6 +197,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     }
   }
 
+  /// カメラセッションの一時停止処理（同期広告も停止）
   func pause() {
     logger.info("\(#function)")
     guard isCameraAvailable else { return }
@@ -193,6 +214,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     }
   }
 
+  /// 写真を撮影する（同期イベント発火時にも利用）
   private func takePhoto() {
     guard isCameraAvailable else { return }
     queue.async { [weak self] in
@@ -202,6 +224,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     }
   }
 
+  /// ユーザー操作で写真撮影を行う（同期イベントも送信）
   func takePhotoFromUser() {
     logger.info("\(#function)")
     guard isCameraAvailable else { return }
@@ -211,8 +234,10 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
 
   // MARK: - AVCapturePhotoCaptureDelegate
 
+  /// 撮影した写真データを一時的に保持
   var photoData: Data?
 
+  /// 写真撮影完了時のデリゲートメソッド。写真データをフォトライブラリに保存
   func photoOutput(
     _ output: AVCapturePhotoOutput,
     didFinishProcessingPhoto photo: AVCapturePhoto,
@@ -234,6 +259,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
 
   // MARK: - SyncDelegate
 
+  /// 同期イベント受信時の処理（例：写真撮影イベント）
   func receivedEvent(_ event: SyncStore.Event) {
     switch event {
     case .takePhoto:
@@ -242,16 +268,20 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
   }
 }
 
+/// AVCaptureVideoPreviewLayerをSwiftUIで表示するためのビュー
 struct CameraPreview: UIViewControllerRepresentable {
+  /// プレビュー表示用のレイヤー
   let previewLayer: AVCaptureVideoPreviewLayer
 
   typealias UIViewControllerType = UIViewController
+  /// UIViewControllerの生成とプレビューレイヤー追加
   func makeUIViewController(context: Context) -> UIViewController {
     let vc = UIViewController()
     vc.view.layer.addSublayer(previewLayer)
     return vc
   }
 
+  /// UIViewControllerの更新時にプレビューレイヤーのフレームを更新
   func updateUIViewController(
     _ uiViewController: UIViewController,
     context: Context
@@ -260,10 +290,14 @@ struct CameraPreview: UIViewControllerRepresentable {
   }
 }
 
+/// カメラのプレビューや各種操作UIを提供するSwiftUIビュー
 struct CameraView: View {
+  /// カメラストア（状態管理と操作用）
   @Bindable var store: CameraStore
+  /// 現在のシーンのフェーズ（アクティブ/非アクティブ等）
   @Environment(\.scenePhase) var scenePhase
 
+  /// ビューの本体。カメラプレビューやボタンなどのUIを構築
   var body: some View {
     NavigationStack {
       ZStack(alignment: .bottom) {
