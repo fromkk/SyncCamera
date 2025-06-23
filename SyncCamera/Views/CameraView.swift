@@ -305,7 +305,7 @@ struct CameraView: View {
               }
             }
             .tint(.white)
-            .transition(.slide.combined(with: .opacity))
+            .transition(.move(edge: .bottom).combined(with: .opacity))
           }
 
           Button {
