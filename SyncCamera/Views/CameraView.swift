@@ -7,7 +7,10 @@ import UIKit
 
 @Observable
 final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
-  private let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "CameraStore")
+  private let logger = Logger(
+    subsystem: Bundle.main.bundleIdentifier!,
+    category: "CameraStore"
+  )
 
   let session = AVCaptureSession()
   var currentVideoInput: AVCaptureDeviceInput?
@@ -20,6 +23,9 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
   let syncStore: SyncStore = .init()
 
   var previewLayer: AVCaptureVideoPreviewLayer?
+
+  /// 設定項目などの表示・非表示
+  var isConfigurationsVisible: Bool = false
 
   enum CaptureMode {
     case photo
@@ -36,7 +42,9 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
   override init() {
     super.init()
     syncStore.delegate = self
-    configuration()
+    if isCameraAvailable {
+      configuration()
+    }
   }
 
   private func configuration() {
@@ -92,6 +100,8 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
 
   func changeDeviceInput(_ device: AVCaptureDevice) {
     logger.info("\(#function)")
+    guard isCameraAvailable else { return }
+
     queue.async { [weak self] in
       guard let self else { return }
       self.session.stopRunning()
@@ -117,6 +127,23 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     }
   }
 
+  var isCameraAvailable: Bool {
+    #if targetEnvironment(simulator)
+      return false
+    #else
+    if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+    {
+      return false
+    } else {
+      return AVCaptureDevice.default(
+        .builtInWideAngleCamera,
+        for: .video,
+        position: .back
+      ) != nil
+    }
+    #endif
+  }
+
   // MARK: - Device Sessions
   let backVideoDeviceDiscoverySession = AVCaptureDevice.DiscoverySession(
     deviceTypes: [
@@ -135,6 +162,8 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
 
   func resume() {
     logger.info("\(#function)")
+    guard isCameraAvailable else { return }
+
     if !syncStore.isAdvertising {
       syncStore.startAdvertising()
     }
@@ -150,6 +179,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
 
   func pause() {
     logger.info("\(#function)")
+    guard isCameraAvailable else { return }
     if syncStore.isAdvertising {
       syncStore.stopAdvertising()
     }
@@ -164,6 +194,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
   }
 
   private func takePhoto() {
+    guard isCameraAvailable else { return }
     queue.async { [weak self] in
       guard let self else { return }
       let settings = AVCapturePhotoSettings()
@@ -173,6 +204,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
 
   func takePhotoFromUser() {
     logger.info("\(#function)")
+    guard isCameraAvailable else { return }
     syncStore.sendEvent(.takePhoto)
     takePhoto()
   }
@@ -182,7 +214,8 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
   var photoData: Data?
 
   func photoOutput(
-    _ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto,
+    _ output: AVCapturePhotoOutput,
+    didFinishProcessingPhoto photo: AVCapturePhoto,
     error: (any Error)?
   ) {
     logger.info("\(#function)")
@@ -219,7 +252,10 @@ struct CameraPreview: UIViewControllerRepresentable {
     return vc
   }
 
-  func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
+  func updateUIViewController(
+    _ uiViewController: UIViewController,
+    context: Context
+  ) {
     previewLayer.frame = uiViewController.view.bounds
   }
 }
@@ -231,27 +267,78 @@ struct CameraView: View {
   var body: some View {
     NavigationStack {
       ZStack(alignment: .bottom) {
+        Color.black.ignoresSafeArea()
+
         if let previewLayer = store.previewLayer {
           CameraPreview(previewLayer: previewLayer)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
 
-        Button {
-          store.takePhotoFromUser()
-        } label: {
-          Label("Shutter", systemImage: "camera.fill")
-            .labelStyle(.iconOnly)
+        VStack(spacing: 16) {
+          Button {
+            store.isConfigurationsVisible.toggle()
+          } label: {
+            Capsule()
+              .frame(width: 100, height: 6)
+          }
+          .tint(.white.opacity(0.5))
+
+          if store.isConfigurationsVisible {
+            HStack(spacing: 32) {
+              Button {
+                // TODO: ISO
+              } label: {
+                Text("ISO")
+              }
+
+              Button {
+                //TODO: Aperture
+              } label: {
+                Text("f")
+              }
+              .labelStyle(.iconOnly)
+
+              Button {
+                // TODO: Shutter speed
+              } label: {
+                Text("SS")
+              }
+            }
+            .tint(.white)
+            .transition(.slide.combined(with: .opacity))
+          }
+
+          Button {
+            store.takePhotoFromUser()
+          } label: {
+            Circle()
+              .frame(width: 80, height: 80)
+          }
+          .accessibilityLabel(Text("シャッター"))
+          .tint(.white)
+          .padding(.bottom, 16)
         }
-        .frame(width: 80, height: 80)
-        .padding(.bottom, 16)
+        .animation(.default, value: store.isConfigurationsVisible)
       }
+      .gesture(
+        DragGesture().onEnded { value in
+          if value.translation.height < -50 {
+            store.isConfigurationsVisible = true
+          } else if value.translation.height > 50 {
+            store.isConfigurationsVisible = false
+          }
+        }
+      )
       .toolbar {
         ToolbarItem(placement: .primaryAction) {
           Button {
             store.isSyncViewPresented.toggle()
           } label: {
-            Label("Sync", systemImage: "arrow.trianglehead.2.clockwise.rotate.90")
-              .labelStyle(.iconOnly)
+            Label(
+              "Sync",
+              systemImage: "arrow.trianglehead.2.clockwise.rotate.90"
+            )
+            .labelStyle(.iconOnly)
           }
         }
       }
@@ -293,4 +380,8 @@ struct CameraView: View {
       MultipeerBrowserView(store: store.syncStore)
     }
   }
+}
+
+#Preview {
+  CameraView(store: CameraStore())
 }
