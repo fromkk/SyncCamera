@@ -69,6 +69,8 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     case shutterSpeed
   }
 
+  // MARK: - ISO
+
   enum ISO: Hashable, CustomStringConvertible {
     case auto
     case value(Int)
@@ -124,6 +126,75 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
         }
         device.exposureMode = .custom
         device.setExposureModeCustom(duration: duration, iso: Float(iso))
+      }
+    } catch {
+      logger.error("error \(error.localizedDescription)")
+    }
+  }
+
+  // MARK: - Shutter Speed
+
+  enum ShutterSpeed: Hashable, CustomStringConvertible {
+    case auto
+    case value(TimeInterval)  // 秒単位
+
+    var description: String {
+      switch self {
+      case .auto:
+        return "AUTO"
+      case let .value(seconds):
+        if seconds >= 1.0 {
+          return String(format: "%.0f\"", seconds)
+        } else {
+          return "1/\(Int(round(1.0 / seconds)))"
+        }
+      }
+    }
+  }
+
+  var currentShutterSpeed: ShutterSpeed? = .auto
+
+  var shutterSpeedValues: [ShutterSpeed] {
+    guard let device = currentVideoInput?.device else {
+      return [.auto]
+    }
+
+    let minDuration = device.activeFormat.minExposureDuration
+    let maxDuration = device.activeFormat.maxExposureDuration
+
+    let availableSeconds: [Double] = [
+      1.0, 1.0 / 2.0, 1.0 / 4.0, 1.0 / 8.0, 1.0 / 15.0, 1.0 / 30.0, 1.0 / 60.0,
+      1.0 / 100.0, 1.0 / 200.0, 1.0 / 400.0, 1.0 / 800.0, 1.0 / 1600.0,
+      1.0 / 3200.0, 1.0 / 6400.0, 1.0 / 12800.0, 1.0 / 25600.0,
+    ]
+
+    let result = availableSeconds.filter { minDuration.seconds <= $0 && $0 <= maxDuration.seconds }
+
+    return [.auto] + result.map { .value($0) }
+  }
+
+  func updateShutterSpeed(_ shutterSpeed: ShutterSpeed) {
+    guard let device = currentVideoInput?.device else { return }
+    do {
+      try device.lockForConfiguration()
+      defer { device.unlockForConfiguration() }
+
+      switch shutterSpeed {
+      case .auto:
+        guard device.isExposureModeSupported(.autoExpose) else {
+          logger.warning("!device.isExposureModeSupported(.autoExpose)")
+          return
+        }
+        device.exposureMode = .autoExpose
+      case let .value(seconds):
+        let iso = device.iso
+        guard device.isExposureModeSupported(.custom) else {
+          logger.warning("!device.isExposureModeSupported(.custom)")
+          return
+        }
+        device.exposureMode = .custom
+        device.setExposureModeCustom(
+          duration: CMTimeMakeWithSeconds(seconds, preferredTimescale: 1_000_000), iso: iso)
       }
     } catch {
       logger.error("error \(error.localizedDescription)")
@@ -431,7 +502,7 @@ struct CameraView: View {
               }
 
               Button {
-                // TODO: Shutter speed
+                store.configurationMode = .shutterSpeed
               } label: {
                 Text("SS")
               }
@@ -457,7 +528,19 @@ struct CameraView: View {
                 )
               )
             case .shutterSpeed:
-              EmptyView()
+              SlideDialView(
+                allValues: store.shutterSpeedValues,
+                selection: Binding(
+                  get: {
+                    store.currentShutterSpeed
+                  },
+                  set: {
+                    store.currentShutterSpeed = $0
+                    guard let ss = $0 else { return }
+                    store.updateShutterSpeed(ss)
+                  }
+                )
+              )
             }
           } else {
             Button {
