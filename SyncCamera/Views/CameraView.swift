@@ -40,16 +40,51 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
 
   /// キャプチャモード（写真/動画）の定義
   enum CaptureMode {
-    case photo  /// 写真撮影モード
-    case video  /// 動画撮影モード
+    case photo
+    /// 写真撮影モード
+    case video/// 動画撮影モード
   }
 
   /// カメラ関連のエラー定義
   enum CameraError: Error {
-    case inputDeviceNotFound      /// 入力デバイスが見つからない
-    case couldntAddVideoDataOutput /// ビデオ出力の追加に失敗
-    case couldntAddPhotoOutput    /// 写真出力の追加に失敗
-    case couldntSetPreset         /// プリセット設定に失敗
+    case inputDeviceNotFound
+    /// 入力デバイスが見つからない
+    case couldntAddVideoDataOutput
+    /// ビデオ出力の追加に失敗
+    case couldntAddPhotoOutput
+    /// 写真出力の追加に失敗
+    case couldntSetPreset/// プリセット設定に失敗
+  }
+
+  var configurationMode: ConfigurationMode?
+
+  enum ConfigurationMode {
+    case iso
+    case shutterSpeed
+  }
+
+  enum ISO: Hashable {
+    case auto
+    case value(Int)
+
+    var displayValue: String {
+      switch self {
+      case .auto:
+        return "AUTO"
+      case let .value(value):
+        return "\(value)"
+      }
+    }
+  }
+
+  var currentISO: ISO = .auto
+
+  var isoValues: [ISO] {
+    // TODO: 正しい値に変更
+    return [
+      .auto, .value(100), .value(200), .value(400), .value(800), .value(1600), .value(3200),
+      .value(6400), .value(12800),
+    ]
   }
 
   /// CameraStoreの初期化処理。SyncDelegateの設定とカメラ利用可の場合の構成処理
@@ -148,16 +183,15 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     #if targetEnvironment(simulator)
       return false
     #else
-    if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
-    {
-      return false
-    } else {
-      return AVCaptureDevice.default(
-        .builtInWideAngleCamera,
-        for: .video,
-        position: .back
-      ) != nil
-    }
+      if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+        return false
+      } else {
+        return AVCaptureDevice.default(
+          .builtInWideAngleCamera,
+          for: .video,
+          position: .back
+        ) != nil
+      }
     #endif
   }
 
@@ -314,23 +348,18 @@ struct CameraView: View {
           } label: {
             Capsule()
               .frame(width: 100, height: 6)
+              .padding(.vertical, 8)
           }
           .tint(.white.opacity(0.5))
+          .contentShape(.rect)
 
           if store.isConfigurationsVisible {
             HStack(spacing: 32) {
               Button {
-                // TODO: ISO
+                store.configurationMode = .iso
               } label: {
                 Text("ISO")
               }
-
-              Button {
-                //TODO: Aperture
-              } label: {
-                Text("f")
-              }
-              .labelStyle(.iconOnly)
 
               Button {
                 // TODO: Shutter speed
@@ -342,27 +371,41 @@ struct CameraView: View {
             .transition(.move(edge: .bottom).combined(with: .opacity))
           }
 
-          Button {
-            store.takePhotoFromUser()
-          } label: {
-            Circle()
-              .frame(width: 80, height: 80)
+          if let configurationMode = store.configurationMode {
+            switch configurationMode {
+            case .iso:
+              DialView(data: store.isoValues, selection: $store.currentISO) { iso in
+                Text(iso.displayValue)
+                  .font(.caption)
+                  .foregroundStyle(.white)
+              }
+            case .shutterSpeed:
+              EmptyView()
+            }
+          } else {
+            Button {
+              store.takePhotoFromUser()
+            } label: {
+              Circle()
+                .frame(width: 80, height: 80)
+            }
+            .accessibilityLabel(Text("シャッター"))
+            .tint(.white)
+            .padding(.bottom, 16)
           }
-          .accessibilityLabel(Text("シャッター"))
-          .tint(.white)
-          .padding(.bottom, 16)
+
         }
         .animation(.default, value: store.isConfigurationsVisible)
       }
-      .gesture(
-        DragGesture().onEnded { value in
-          if value.translation.height < -50 {
-            store.isConfigurationsVisible = true
-          } else if value.translation.height > 50 {
-            store.isConfigurationsVisible = false
-          }
-        }
-      )
+      //      .gesture(
+      //        DragGesture().onEnded { value in
+      //          if value.translation.height < -50 {
+      //            store.isConfigurationsVisible = true
+      //          } else if value.translation.height > 50 {
+      //            store.isConfigurationsVisible = false
+      //          }
+      //        }
+      //      )
       .toolbar {
         ToolbarItem(placement: .primaryAction) {
           Button {
