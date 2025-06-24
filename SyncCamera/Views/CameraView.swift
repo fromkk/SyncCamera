@@ -67,6 +67,50 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
   enum ConfigurationMode {
     case iso
     case shutterSpeed
+    case focus
+  }
+  // MARK: - Focus
+
+  enum FocusMode: Hashable, CustomStringConvertible {
+    case auto
+    case value(Float)
+
+    var description: String {
+      switch self {
+      case .auto:
+        return "AUTO"
+      case let .value(value):
+        return String(format: "%.2f", value)
+      }
+    }
+  }
+
+  var currentFocus: FocusMode? = .auto
+
+  func updateFocus(_ focus: FocusMode) {
+    guard let device = currentVideoInput?.device else { return }
+    do {
+      try device.lockForConfiguration()
+      defer { device.unlockForConfiguration() }
+
+      switch focus {
+      case .auto:
+        guard device.isFocusModeSupported(.continuousAutoFocus) else {
+          logger.warning("!device.isFocusModeSupported(.continuousAutoFocus)")
+          return
+        }
+        device.focusMode = .continuousAutoFocus
+      case let .value(value):
+        guard device.isFocusModeSupported(.locked) else {
+          logger.warning("!device.isFocusModeSupported(.locked)")
+          return
+        }
+        device.focusMode = .locked
+        device.setFocusModeLocked(lensPosition: value)
+      }
+    } catch {
+      logger.error("error \(error.localizedDescription)")
+    }
   }
 
   // MARK: - ISO
@@ -455,10 +499,43 @@ struct CameraPreview: UIViewControllerRepresentable {
   let previewLayer: AVCaptureVideoPreviewLayer
 
   typealias UIViewControllerType = UIViewController
+
+  class Coordinator: NSObject {
+    let previewLayer: AVCaptureVideoPreviewLayer
+    let device: AVCaptureDevice?
+
+    init(previewLayer: AVCaptureVideoPreviewLayer) {
+      self.previewLayer = previewLayer
+      self.device =
+        previewLayer.session?.inputs.compactMap { $0 as? AVCaptureDeviceInput }.first?.device
+    }
+
+    @objc func handleTap(_ gesture: UITapGestureRecognizer) {
+      let point = gesture.location(in: gesture.view)
+      let focusPoint = previewLayer.captureDevicePointConverted(fromLayerPoint: point)
+      guard let device else { return }
+      do {
+        try device.lockForConfiguration()
+        if device.isFocusPointOfInterestSupported {
+          device.focusPointOfInterest = focusPoint
+          device.focusMode = .autoFocus
+        }
+        device.unlockForConfiguration()
+      } catch {}
+    }
+  }
+
+  func makeCoordinator() -> Coordinator {
+    Coordinator(previewLayer: previewLayer)
+  }
+
   /// UIViewControllerの生成とプレビューレイヤー追加
   func makeUIViewController(context: Context) -> UIViewController {
     let vc = UIViewController()
     vc.view.layer.addSublayer(previewLayer)
+    vc.view.addGestureRecognizer(
+      UITapGestureRecognizer(
+        target: context.coordinator, action: #selector(context.coordinator.handleTap(_:))))
     return vc
   }
 
@@ -550,6 +627,29 @@ struct CameraView: View {
                       .stroke(Color.white.opacity(0.5), lineWidth: 1)
                   )
               }
+
+              Button {
+                if store.configurationMode != .focus {
+                  store.configurationMode = .focus
+                } else {
+                  store.configurationMode = nil
+                }
+              } label: {
+                Text("Focus")
+                  .padding(8)
+                  .frame(minWidth: 80)
+                  .background(
+                    store.configurationMode == .focus ? Color.accentColor : Color.clear
+                  )
+                  .foregroundColor(
+                    store.configurationMode == .focus ? .white : .white.opacity(0.7)
+                  )
+                  .cornerRadius(8)
+                  .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                      .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                  )
+              }
             }
             .tint(.white)
             .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -585,6 +685,53 @@ struct CameraView: View {
                   }
                 )
               )
+            case .focus:
+              HStack(spacing: 16) {
+                Button {
+                  if store.currentFocus == .auto {
+                    let focus: CameraStore.FocusMode = .value(0)
+                    store.currentFocus = focus
+                    store.updateFocus(focus)
+                  } else {
+                    store.currentFocus = .auto
+                  }
+                } label: {
+                  Text("AUTO")
+                }
+                .padding(8)
+                .frame(minWidth: 80)
+                .background(
+                  store.currentFocus == .auto ? Color.accentColor : Color.clear
+                )
+                .foregroundColor(
+                  store.currentFocus == .auto ? .white : .white.opacity(0.7)
+                )
+                .cornerRadius(8)
+                .overlay(
+                  RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                )
+
+                if store.currentFocus != .auto {
+                  Slider(
+                    value: Binding<Float>(
+                      get: {
+                        switch store.currentFocus {
+                        case .value(let float):
+                          return float
+                        case .auto, .none:
+                          return 0
+                        }
+                      },
+                      set: { float in
+                        let value: CameraStore.FocusMode = .value(float)
+                        store.currentFocus = value
+                        store.updateFocus(value)
+                      }
+                    ))
+                }
+              }
+              .padding(.horizontal)
             }
           } else {
             Button {
