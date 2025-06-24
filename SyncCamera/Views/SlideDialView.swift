@@ -43,12 +43,13 @@ struct SlideDialView<Value: Hashable & CustomStringConvertible>: View {
             .frame(width: 2, height: 48)
             .allowsHitTesting(false)
 
-          // 【追加】左右からのグラデーション
           LinearGradient(
             gradient: Gradient(colors: [.black, .clear, .black]),
             startPoint: .leading,
             endPoint: .trailing
           )
+          .frame(maxWidth: .infinity)
+          .ignoresSafeArea()
           .allowsHitTesting(false)  // タップに干渉しないように
         }
       }
