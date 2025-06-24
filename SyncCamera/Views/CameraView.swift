@@ -86,27 +86,44 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
   var currentISO: ISO? = .auto
 
   var isoValues: [ISO] {
-    // TODO: 正しい値に変更
-    return [
-      .auto, .value(100), .value(200), .value(400), .value(800), .value(1600), .value(3200),
-      .value(6400), .value(12800),
+    guard let device = currentVideoInput?.device else {
+      return [.auto]
+    }
+
+    let minISO = Int(device.activeFormat.minISO)
+    let maxISO = Int(device.activeFormat.maxISO)
+
+    let availableISO: [Int] = [
+      64, 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600,
     ]
+    let result: [Int] = availableISO.filter { minISO <= $0 && $0 <= maxISO }
+    return [
+      .auto
+    ] + result.map { .value($0) }
   }
 
   func updateISO(_ iso: ISO) {
-    guard let currentISO, let device = currentVideoInput?.device else { return }
-
+    guard let device = currentVideoInput?.device else { return }
     do {
-      switch currentISO {
-      case .auto:
-        try device.lockForConfiguration()
-        device.exposureMode = .autoExpose
+      try device.lockForConfiguration()
+      defer {
         device.unlockForConfiguration()
+      }
+      switch iso {
+      case .auto:
+        guard device.isExposureModeSupported(.autoExpose) else {
+          logger.warning("!device.isExposureModeSupported(.autoExpose)")
+          return
+        }
+        device.exposureMode = .autoExpose
       case let .value(iso):
         let duration = device.exposureDuration
-        try device.lockForConfiguration()
+        guard device.isExposureModeSupported(.custom) else {
+          logger.warning("!device.isExposureModeSupported(.custom)")
+          return
+        }
+        device.exposureMode = .custom
         device.setExposureModeCustom(duration: duration, iso: Float(iso))
-        device.unlockForConfiguration()
       }
     } catch {
       logger.error("error \(error.localizedDescription)")
@@ -119,7 +136,26 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     syncStore.delegate = self
     if isCameraAvailable {
       configuration()
+      subscribeDeviceValues()
     }
+  }
+
+  private var timer: Timer?
+
+  private func subscribeDeviceValues() {
+    timer?.invalidate()
+    timer = Timer.scheduledTimer(
+      withTimeInterval: 1.0 / 30.0,
+      repeats: true,
+      block: { [weak self] _ in
+        guard let self, let device = self.currentVideoInput?.device else {
+          return
+        }
+        print(
+          "current ISO \(device.iso) shutter speed \(device.exposureDuration.seconds)"
+        )
+      }
+    )
   }
 
   /// カメラセッションの構成を行う（入力・出力の追加、プリセット設定など）
@@ -209,7 +245,9 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     #if targetEnvironment(simulator)
       return false
     #else
-      if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1" {
+      if ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"]
+        == "1"
+      {
         return false
       } else {
         return AVCaptureDevice.default(
@@ -225,8 +263,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
   /// 背面カメラのデバイス探索セッション
   let backVideoDeviceDiscoverySession = AVCaptureDevice.DiscoverySession(
     deviceTypes: [
-      .builtInTripleCamera, .builtInDualWideCamera, .builtInDualCamera,
-      .builtInWideAngleCamera,
+      .builtInWideAngleCamera, .builtInUltraWideCamera, .builtInTelephotoCamera,
     ],
     mediaType: .video,
     position: .back
@@ -254,6 +291,9 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
         return
       }
       self.session.startRunning()
+      if !(self.timer?.isValid ?? false) {
+        self.subscribeDeviceValues()
+      }
     }
   }
 
@@ -271,6 +311,9 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
         return
       }
       self.session.stopRunning()
+      if self.timer?.isValid ?? false {
+        self.timer?.invalidate()
+      }
     }
   }
 
@@ -400,10 +443,19 @@ struct CameraView: View {
           if let configurationMode = store.configurationMode {
             switch configurationMode {
             case .iso:
-              SlideDialView(allValues: store.isoValues, selection: $store.currentISO)
-              DialView(allValue: store.isoValues, selection: $store.currentISO) {
-                Text("\($0.description)")
-              }
+              SlideDialView(
+                allValues: store.isoValues,
+                selection: Binding(
+                  get: {
+                    store.currentISO
+                  },
+                  set: {
+                    store.currentISO = $0
+                    guard let iso = $0 else { return }
+                    store.updateISO(iso)
+                  }
+                )
+              )
             case .shutterSpeed:
               EmptyView()
             }
