@@ -36,7 +36,13 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
   var previewLayer: AVCaptureVideoPreviewLayer?
 
   /// 設定項目などの表示・非表示
-  var isConfigurationsVisible: Bool = false
+  var isConfigurationsVisible: Bool = false {
+    didSet {
+      if !isConfigurationsVisible {
+        configurationMode = nil
+      }
+    }
+  }
 
   /// キャプチャモード（写真/動画）の定義
   enum CaptureMode {
@@ -63,11 +69,11 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     case shutterSpeed
   }
 
-  enum ISO: Hashable {
+  enum ISO: Hashable, CustomStringConvertible {
     case auto
     case value(Int)
 
-    var displayValue: String {
+    var description: String {
       switch self {
       case .auto:
         return "AUTO"
@@ -77,7 +83,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     }
   }
 
-  var currentISO: ISO = .auto
+  var currentISO: ISO? = .auto
 
   var isoValues: [ISO] {
     // TODO: 正しい値に変更
@@ -85,6 +91,26 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
       .auto, .value(100), .value(200), .value(400), .value(800), .value(1600), .value(3200),
       .value(6400), .value(12800),
     ]
+  }
+
+  func updateISO(_ iso: ISO) {
+    guard let currentISO, let device = currentVideoInput?.device else { return }
+
+    do {
+      switch currentISO {
+      case .auto:
+        try device.lockForConfiguration()
+        device.exposureMode = .autoExpose
+        device.unlockForConfiguration()
+      case let .value(iso):
+        let duration = device.exposureDuration
+        try device.lockForConfiguration()
+        device.setExposureModeCustom(duration: duration, iso: Float(iso))
+        device.unlockForConfiguration()
+      }
+    } catch {
+      logger.error("error \(error.localizedDescription)")
+    }
   }
 
   /// CameraStoreの初期化処理。SyncDelegateの設定とカメラ利用可の場合の構成処理
@@ -374,10 +400,9 @@ struct CameraView: View {
           if let configurationMode = store.configurationMode {
             switch configurationMode {
             case .iso:
-              DialView(data: store.isoValues, selection: $store.currentISO) { iso in
-                Text(iso.displayValue)
-                  .font(.caption)
-                  .foregroundStyle(.white)
+              SlideDialView(allValues: store.isoValues, selection: $store.currentISO)
+              DialView(allValue: store.isoValues, selection: $store.currentISO) {
+                Text("\($0.description)")
               }
             case .shutterSpeed:
               EmptyView()
@@ -397,15 +422,15 @@ struct CameraView: View {
         }
         .animation(.default, value: store.isConfigurationsVisible)
       }
-      //      .gesture(
-      //        DragGesture().onEnded { value in
-      //          if value.translation.height < -50 {
-      //            store.isConfigurationsVisible = true
-      //          } else if value.translation.height > 50 {
-      //            store.isConfigurationsVisible = false
-      //          }
-      //        }
-      //      )
+      .gesture(
+        DragGesture().onEnded { value in
+          if value.translation.height < -50 {
+            store.isConfigurationsVisible = true
+          } else if value.translation.height > 50 {
+            store.isConfigurationsVisible = false
+          }
+        }
+      )
       .toolbar {
         ToolbarItem(placement: .primaryAction) {
           Button {

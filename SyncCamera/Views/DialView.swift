@@ -1,12 +1,10 @@
 import SwiftUI
 
-// MARK: - DialView メインのビュー
-struct DialView<Data: RandomAccessCollection, Content: View>: View
-where Data.Element: Hashable {
-  // (プロパティ定義は変更なし)
-  private let data: Data
-  private let content: (Data.Element) -> Content
-  @Binding private var selection: Data.Element
+struct DialView<Value: RandomAccessCollection, Content: View>: View
+where Value.Element: Hashable {
+  private let allValue: Value
+  private let content: (Value.Element) -> Content
+  @Binding private var selection: Value.Element?
   private let configuration: DialConfiguration
   private let isDebug: Bool = false
 
@@ -15,24 +13,24 @@ where Data.Element: Hashable {
 
   // (Initializerは変更なし)
   init(
-    data: Data,
-    selection: Binding<Data.Element>,
+    allValue: Value,
+    selection: Binding<Value.Element?>,
     configuration: DialConfiguration = DialConfiguration(),
-    @ViewBuilder content: @escaping (Data.Element) -> Content
+    @ViewBuilder content: @escaping (Value.Element) -> Content
   ) {
-    self.data = data
+    self.allValue = allValue
     self._selection = selection
     self.content = content
     self.configuration = configuration
   }
 
-  // (BodyとSubviewsは変更なし)
   var body: some View {
     VStack {
       if isDebug,
-        let currentIndex = data.firstIndex(of: selection)
+        let selection,
+        let currentIndex = allValue.firstIndex(of: selection)
       {
-        let indexNumber = data.distance(from: data.startIndex, to: currentIndex)
+        let indexNumber = allValue.distance(from: allValue.startIndex, to: currentIndex)
         Text("選択中: \(String(describing: selection)) (\(indexNumber))")
           .font(.headline)
           .padding()
@@ -51,7 +49,7 @@ where Data.Element: Hashable {
 
   private var dial: some View {
     ZStack {
-      ForEach(Array(data.enumerated()), id: \.element) { index, element in
+      ForEach(Array(allValue.enumerated()), id: \.element) { index, element in
         content(element)
           .offset(y: -configuration.radius)
           .rotationEffect(rotationAngleForIndex(index))
@@ -100,7 +98,7 @@ where Data.Element: Hashable {
 
   // (Helper Methods は変更なし)
   private var anglePerTick: Angle {
-    .degrees(360.0 / Double(data.count))
+    .degrees(360.0 / Double(allValue.count))
   }
 
   private func rotationAngleForIndex(_ index: Int) -> Angle {
@@ -154,16 +152,16 @@ where Data.Element: Hashable {
     let positiveAngle =
       normalizedAngle < 0 ? normalizedAngle + 360 : normalizedAngle
     let selectedIndex =
-      Int(round(positiveAngle / anglePerTick.degrees)) % data.count
+      Int(round(positiveAngle / anglePerTick.degrees)) % allValue.count
 
-    if let index = data.index(
-      data.startIndex,
+    if let index = allValue.index(
+      allValue.startIndex,
       offsetBy: selectedIndex,
-      limitedBy: data.endIndex
+      limitedBy: allValue.endIndex
     ),
-      index != data.endIndex
+      index != allValue.endIndex
     {
-      let newSelection = data[index]
+      let newSelection = allValue[index]
       if selection != newSelection {
         selection = newSelection
         // 項目が切り替わるたびに軽いフィードバックを生成
@@ -174,15 +172,15 @@ where Data.Element: Hashable {
 
   /// スナップ完了後の選択値更新 + 確定フィードバック
   private func updateSelectionAfterSnap(at index: Int) {
-    let wrappedIndex = index % data.count
-    if let newIndex = data.index(
-      data.startIndex,
+    let wrappedIndex = index % allValue.count
+    if let newIndex = allValue.index(
+      allValue.startIndex,
       offsetBy: wrappedIndex,
-      limitedBy: data.endIndex
+      limitedBy: allValue.endIndex
     ),
-      newIndex != data.endIndex
+      newIndex != allValue.endIndex
     {
-      let newSelection = data[newIndex]
+      let newSelection = allValue[newIndex]
       selection = newSelection
       // 値が確定したことを示す、より強いフィードバックを生成
       generateSelectionHapticFeedback()
@@ -206,8 +204,8 @@ where Data.Element: Hashable {
   }
 
   private func setupInitialRotation() {
-    if let initialIndex = data.firstIndex(of: selection) {
-      let index = data.distance(from: data.startIndex, to: initialIndex)
+    if let selection, let initialIndex = allValue.firstIndex(of: selection) {
+      let index = allValue.distance(from: allValue.startIndex, to: initialIndex)
       let angle = -rotationAngleForIndex(index)
       rotationAngle = angle
     }
