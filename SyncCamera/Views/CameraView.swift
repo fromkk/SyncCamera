@@ -168,7 +168,9 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
       1.0 / 3200.0, 1.0 / 6400.0, 1.0 / 12800.0, 1.0 / 25600.0,
     ]
 
-    let result = availableSeconds.filter { minDuration.seconds <= $0 && $0 <= maxDuration.seconds }
+    let result = availableSeconds.filter {
+      minDuration.seconds <= $0 && $0 <= maxDuration.seconds
+    }
 
     return [.auto] + result.map { .value($0) }
   }
@@ -194,7 +196,12 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
         }
         device.exposureMode = .custom
         device.setExposureModeCustom(
-          duration: CMTimeMakeWithSeconds(seconds, preferredTimescale: 1_000_000), iso: iso)
+          duration: CMTimeMakeWithSeconds(
+            seconds,
+            preferredTimescale: 1_000_000
+          ),
+          iso: iso
+        )
       }
     } catch {
       logger.error("error \(error.localizedDescription)")
@@ -496,15 +503,52 @@ struct CameraView: View {
           if store.isConfigurationsVisible {
             HStack(spacing: 32) {
               Button {
-                store.configurationMode = .iso
+                if store.configurationMode != .iso {
+                  store.configurationMode = .iso
+                } else {
+                  store.configurationMode = nil
+                }
               } label: {
                 Text("ISO")
+                  .padding(8)
+                  .frame(minWidth: 80)
+                  .background(
+                    store.configurationMode == .iso ? Color.accentColor : Color.clear
+                  )
+                  .foregroundColor(
+                    store.configurationMode == .iso
+                      ? .white : .white.opacity(0.7)
+                  )
+                  .cornerRadius(8)
+                  .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                      .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                  )
               }
 
               Button {
-                store.configurationMode = .shutterSpeed
+                if store.configurationMode != .shutterSpeed {
+                  store.configurationMode = .shutterSpeed
+                } else {
+                  store.configurationMode = nil
+                }
               } label: {
                 Text("SS")
+                  .padding(8)
+                  .frame(minWidth: 80)
+                  .background(
+                    store.configurationMode == .shutterSpeed
+                      ? Color.accentColor : Color.clear
+                  )
+                  .foregroundColor(
+                    store.configurationMode == .shutterSpeed
+                      ? .white : .white.opacity(0.7)
+                  )
+                  .cornerRadius(8)
+                  .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                      .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                  )
               }
             }
             .tint(.white)
