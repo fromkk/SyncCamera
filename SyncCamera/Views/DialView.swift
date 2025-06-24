@@ -11,7 +11,6 @@ where Value.Element: Hashable {
   @State private var rotationAngle: Angle = .zero
   @State private var lastDragAngle: Angle = .zero
 
-  // (Initializerは変更なし)
   init(
     allValue: Value,
     selection: Binding<Value.Element?>,
@@ -30,7 +29,10 @@ where Value.Element: Hashable {
         let selection,
         let currentIndex = allValue.firstIndex(of: selection)
       {
-        let indexNumber = allValue.distance(from: allValue.startIndex, to: currentIndex)
+        let indexNumber = allValue.distance(
+          from: allValue.startIndex,
+          to: currentIndex
+        )
         Text("選択中: \(String(describing: selection)) (\(indexNumber))")
           .font(.headline)
           .padding()
@@ -45,6 +47,41 @@ where Value.Element: Hashable {
       .padding()
     }
     .onAppear(perform: setupInitialRotation)
+    // selection の変更を監視し、rotationAngle を更新
+    .onChange(of: selection) { _, newSelection in
+      guard let newSelection = newSelection else { return }
+      if let index = allValue.firstIndex(of: newSelection) {
+        let initialIndex = allValue.distance(
+          from: allValue.startIndex,
+          to: index
+        )
+        let targetAngle = -rotationAngleForIndex(initialIndex)
+
+        // 現在の回転角度と目標角度の差を考慮して、最も近い回転量でアニメーションさせる
+        // このロジックはsnapToNearestTick()でのtargetAngle計算ロジックに似ているが、
+        // onChangeではドラッグ中の状態を考慮しないため、よりシンプルになる
+        let currentDegrees = rotationAngle.degrees
+        let targetDegrees = targetAngle.degrees
+
+        let diff = (targetDegrees - currentDegrees).truncatingRemainder(
+          dividingBy: 360
+        )
+        let adjustedTarget: Double
+        if diff > 180 {
+          adjustedTarget = targetDegrees - 360
+        } else if diff < -180 {
+          adjustedTarget = targetDegrees + 360
+        } else {
+          adjustedTarget = targetDegrees
+        }
+
+        withAnimation(
+          .spring(response: 0.4, dampingFraction: 0.7, blendDuration: 0)
+        ) {
+          rotationAngle = .degrees(adjustedTarget)
+        }
+      }
+    }
   }
 
   private var dial: some View {
@@ -68,7 +105,7 @@ where Value.Element: Hashable {
       .offset(y: -configuration.indicatorOffset)
   }
 
-  // MARK: - Gestures (onChanged内を修正)
+  // MARK: - Gestures
 
   private var dragGesture: some Gesture {
     DragGesture(minimumDistance: 0)
@@ -76,7 +113,6 @@ where Value.Element: Hashable {
         let dragAngle = angle(for: value.location)
 
         if lastDragAngle != .zero {
-          // 【修正点】角度の差分を計算し、360度の境界をまたぐ際のジャンプを補正する
           var diff = dragAngle - lastDragAngle
           if diff.degrees > 180 {
             diff.degrees -= 360
@@ -96,7 +132,8 @@ where Value.Element: Hashable {
       }
   }
 
-  // (Helper Methods は変更なし)
+  // MARK: - Helper Methods
+
   private var anglePerTick: Angle {
     .degrees(360.0 / Double(allValue.count))
   }
