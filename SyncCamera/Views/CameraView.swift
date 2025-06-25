@@ -44,6 +44,10 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     }
   }
 
+  let deviceOrientationClient: DeviceOrientationClient = .liveValue
+
+  var currentOrientation: UIDeviceOrientation?
+
   /// キャプチャモード（写真/動画）の定義
   enum CaptureMode {
     case photo
@@ -259,6 +263,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     if isCameraAvailable {
       configuration()
       subscribeDeviceValues()
+      subscribeDeviceOrientation()
     }
   }
 
@@ -278,6 +283,16 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
         )
       }
     )
+  }
+
+  private var deviceOrientationTask: Task<Void, Never>?
+
+  private func subscribeDeviceOrientation() {
+    deviceOrientationTask = Task {
+      for await orientation in deviceOrientationClient.subscribe() {
+        currentOrientation = orientation
+      }
+    }
   }
 
   /// カメラセッションの構成を行う（入力・出力の追加、プリセット設定など）
@@ -416,6 +431,8 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
       if !(self.timer?.isValid ?? false) {
         self.subscribeDeviceValues()
       }
+      deviceOrientationTask?.cancel()
+      subscribeDeviceOrientation()
     }
   }
 
@@ -436,6 +453,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
       if self.timer?.isValid ?? false {
         self.timer?.invalidate()
       }
+      deviceOrientationTask?.cancel()
     }
   }
 
@@ -493,61 +511,6 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
   }
 }
 
-/// AVCaptureVideoPreviewLayerをSwiftUIで表示するためのビュー
-struct CameraPreview: UIViewControllerRepresentable {
-  /// プレビュー表示用のレイヤー
-  let previewLayer: AVCaptureVideoPreviewLayer
-
-  typealias UIViewControllerType = UIViewController
-
-  class Coordinator: NSObject {
-    let previewLayer: AVCaptureVideoPreviewLayer
-    let device: AVCaptureDevice?
-
-    init(previewLayer: AVCaptureVideoPreviewLayer) {
-      self.previewLayer = previewLayer
-      self.device =
-        previewLayer.session?.inputs.compactMap { $0 as? AVCaptureDeviceInput }.first?.device
-    }
-
-    @objc func handleTap(_ gesture: UITapGestureRecognizer) {
-      let point = gesture.location(in: gesture.view)
-      let focusPoint = previewLayer.captureDevicePointConverted(fromLayerPoint: point)
-      guard let device else { return }
-      do {
-        try device.lockForConfiguration()
-        if device.isFocusPointOfInterestSupported {
-          device.focusPointOfInterest = focusPoint
-          device.focusMode = .autoFocus
-        }
-        device.unlockForConfiguration()
-      } catch {}
-    }
-  }
-
-  func makeCoordinator() -> Coordinator {
-    Coordinator(previewLayer: previewLayer)
-  }
-
-  /// UIViewControllerの生成とプレビューレイヤー追加
-  func makeUIViewController(context: Context) -> UIViewController {
-    let vc = UIViewController()
-    vc.view.layer.addSublayer(previewLayer)
-    vc.view.addGestureRecognizer(
-      UITapGestureRecognizer(
-        target: context.coordinator, action: #selector(context.coordinator.handleTap(_:))))
-    return vc
-  }
-
-  /// UIViewControllerの更新時にプレビューレイヤーのフレームを更新
-  func updateUIViewController(
-    _ uiViewController: UIViewController,
-    context: Context
-  ) {
-    previewLayer.frame = uiViewController.view.bounds
-  }
-}
-
 /// カメラのプレビューや各種操作UIを提供するSwiftUIビュー
 struct CameraView: View {
   /// カメラストア（状態管理と操作用）
@@ -559,11 +522,17 @@ struct CameraView: View {
   var body: some View {
     NavigationStack {
       ZStack(alignment: .bottom) {
-        Color.black.ignoresSafeArea()
-
         if let previewLayer = store.previewLayer {
-          CameraPreview(previewLayer: previewLayer)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+          GeometryReader { proxy in
+            CameraPreview(
+              previewLayer: previewLayer,
+              orientation: store.currentOrientation
+            )
+            .frame(
+              width: frameWidth(for: proxy.size, orientation: store.currentOrientation),
+              height: frameHeight(for: proxy.size, orientation: store.currentOrientation)
+            )
+          }
         }
 
         VStack(spacing: 16) {
@@ -748,6 +717,7 @@ struct CameraView: View {
         }
         .animation(.default, value: store.isConfigurationsVisible)
       }
+      .background(Color.black)
       .gesture(
         DragGesture().onEnded { value in
           if value.translation.height < -50 {
@@ -806,6 +776,36 @@ struct CameraView: View {
     }
     .sheet(isPresented: $store.isSyncViewPresented) {
       MultipeerBrowserView(store: store.syncStore)
+    }
+  }
+
+  /// デバイスの向きに応じてフレームの幅を計算
+  private func frameWidth(for size: CGSize, orientation: UIDeviceOrientation?) -> CGFloat {
+    guard let orientation = orientation else { return size.width }
+
+    if orientation.isPortrait {
+      // 縦向きの場合は 3/4 の比率で縦長に
+      return size.width * 0.75
+    } else if orientation.isLandscape {
+      // 横向きの場合は 4/3 の比率で横長に
+      return size.width
+    } else {
+      return size.width
+    }
+  }
+
+  /// デバイスの向きに応じてフレームの高さを計算
+  private func frameHeight(for size: CGSize, orientation: UIDeviceOrientation?) -> CGFloat {
+    guard let orientation = orientation else { return size.height }
+
+    if orientation.isPortrait {
+      // 縦向きの場合は 3/4 の比率で縦長に
+      return size.height
+    } else if orientation.isLandscape {
+      // 横向きの場合は 4/3 の比率で横長に
+      return size.height * 0.75
+    } else {
+      return size.height
     }
   }
 }

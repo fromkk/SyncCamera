@@ -7,6 +7,8 @@ struct CameraPreview: UIViewControllerRepresentable {
   /// プレビュー表示用のレイヤー
   let previewLayer: AVCaptureVideoPreviewLayer
 
+  var orientation: UIDeviceOrientation?
+
   typealias UIViewControllerType = UIViewController
 
   class Coordinator: NSObject {
@@ -16,12 +18,15 @@ struct CameraPreview: UIViewControllerRepresentable {
     init(previewLayer: AVCaptureVideoPreviewLayer) {
       self.previewLayer = previewLayer
       self.device =
-        previewLayer.session?.inputs.compactMap { $0 as? AVCaptureDeviceInput }.first?.device
+        previewLayer.session?.inputs.compactMap { $0 as? AVCaptureDeviceInput }
+        .first?.device
     }
 
     @objc func handleTap(_ gesture: UITapGestureRecognizer) {
       let point = gesture.location(in: gesture.view)
-      let focusPoint = previewLayer.captureDevicePointConverted(fromLayerPoint: point)
+      let focusPoint = previewLayer.captureDevicePointConverted(
+        fromLayerPoint: point
+      )
       guard let device else { return }
       do {
         try device.lockForConfiguration()
@@ -44,7 +49,10 @@ struct CameraPreview: UIViewControllerRepresentable {
     vc.view.layer.addSublayer(previewLayer)
     vc.view.addGestureRecognizer(
       UITapGestureRecognizer(
-        target: context.coordinator, action: #selector(context.coordinator.handleTap(_:))))
+        target: context.coordinator,
+        action: #selector(context.coordinator.handleTap(_:))
+      )
+    )
     return vc
   }
 
@@ -54,5 +62,18 @@ struct CameraPreview: UIViewControllerRepresentable {
     context: Context
   ) {
     previewLayer.frame = uiViewController.view.bounds
+
+    switch orientation {
+    case .portrait:
+      previewLayer.connection?.videoRotationAngle = 90
+    case .landscapeLeft:
+      previewLayer.connection?.videoRotationAngle = 0
+    case .landscapeRight:
+      previewLayer.connection?.videoRotationAngle = 180
+    case .portraitUpsideDown:
+      previewLayer.connection?.videoRotationAngle = 270
+    default:
+      previewLayer.connection?.videoRotationAngle = 90
+    }
   }
 }

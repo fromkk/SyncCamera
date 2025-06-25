@@ -11,7 +11,9 @@ extension DeviceOrientationClient {
         let task = Task { @MainActor in
           let device = UIDevice.current
           device.beginGeneratingDeviceOrientationNotifications()
-          for await _ in NotificationCenter.default.notifications(named: UIDevice.orientationDidChangeNotification).map({ _ in () }) {
+          for await _ in NotificationCenter.default.notifications(
+            named: UIDevice.orientationDidChangeNotification
+          ).map({ _ in () }) {
             continuation.yield(UIDevice.current.orientation)
           }
         }
