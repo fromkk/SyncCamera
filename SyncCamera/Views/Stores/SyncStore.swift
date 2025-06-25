@@ -34,6 +34,9 @@ final class SyncStore: NSObject, MCSessionDelegate, MCBrowserViewControllerDeleg
   private(set) var error: (any Error)?
   var receivedEvent: Event?
 
+  /// 保留中の招待情報を保持するプロパティ
+  var pendingInvitation: (peerID: MCPeerID, handler: (Bool, MCSession?) -> Void)?
+
   override init() {
     let mcSession = MCSession(
       peer: myPeerID,
@@ -100,6 +103,20 @@ final class SyncStore: NSObject, MCSessionDelegate, MCBrowserViewControllerDeleg
     } catch {
       self.error = error
     }
+  }
+    
+  /// 招待を承諾する
+  func acceptInvitation() {
+      guard let invitation = pendingInvitation else { return }
+      invitation.handler(true, mcSession)
+      pendingInvitation = nil
+  }
+
+  /// 招待を拒否する
+  func declineInvitation() {
+      guard let invitation = pendingInvitation else { return }
+      invitation.handler(false, nil)
+      pendingInvitation = nil
   }
 
   // MARK: - MCSessionDelegate
@@ -204,8 +221,9 @@ final class SyncStore: NSObject, MCSessionDelegate, MCBrowserViewControllerDeleg
     _ advertiser: MCNearbyServiceAdvertiser, didReceiveInvitationFromPeer peerID: MCPeerID,
     withContext context: Data?, invitationHandler: @escaping (Bool, MCSession?) -> Void
   ) {
-    logger.info("\(#function) context \(String(describing: context))")
-    invitationHandler(true, mcSession)
+    logger.info("\(#function) from \(peerID.displayName)")
+    // 招待を保留状態にする
+    self.pendingInvitation = (peerID: peerID, handler: invitationHandler)
   }
 }
 

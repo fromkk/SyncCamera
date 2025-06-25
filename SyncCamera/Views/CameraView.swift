@@ -830,6 +830,23 @@ struct CameraView: View {
     .sheet(isPresented: $store.isSyncViewPresented) {
       MultipeerBrowserView(store: store.syncStore)
     }
+    .alert(
+      "\(store.syncStore.pendingInvitation?.peerID.displayName ?? "")からペアリングが届いています",
+      isPresented: Binding(
+        get: { store.syncStore.pendingInvitation != nil },
+        set: { _ in store.syncStore.pendingInvitation = nil }
+      ),
+      presenting: store.syncStore.pendingInvitation
+    ) { _ in
+      Button("OK") {
+        store.syncStore.acceptInvitation()
+      }
+      Button("キャンセル", role: .cancel) {
+        store.syncStore.declineInvitation()
+      }
+    } message: { _ in
+      Text("接続しますか？")
+    }
   }
 
   @ViewBuilder
