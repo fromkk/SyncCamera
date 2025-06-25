@@ -47,6 +47,7 @@ struct CameraPreview: UIViewControllerRepresentable {
   func makeUIViewController(context: Context) -> UIViewController {
     let vc = UIViewController()
     vc.view.layer.addSublayer(previewLayer)
+    previewLayer.frame = vc.view.frame
     vc.view.addGestureRecognizer(
       UITapGestureRecognizer(
         target: context.coordinator,
@@ -61,7 +62,7 @@ struct CameraPreview: UIViewControllerRepresentable {
     _ uiViewController: UIViewController,
     context: Context
   ) {
-    previewLayer.frame = uiViewController.view.bounds
+    previewLayer.frame = uiViewController.view.frame
 
     switch orientation {
     case .portrait:
