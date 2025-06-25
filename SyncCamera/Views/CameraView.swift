@@ -739,8 +739,13 @@ struct CameraView: View {
           }
         } else {
           HStack {
+            // Left placeholder to balance the sync button
+            Spacer()
+              .frame(width: 80)
+
             Spacer()
 
+            // Shutter button in the middle
             Button {
               store.takePhotoFromUser()
             } label: {
@@ -752,6 +757,25 @@ struct CameraView: View {
             .padding(.bottom, 16)
 
             Spacer()
+
+            // Sync button on the right
+            Button {
+              store.isSyncViewPresented.toggle()
+            } label: {
+              HStack {
+                Image(systemName: "arrow.triangle.2.circlepath.camera")
+                  .resizable()
+                  .aspectRatio(contentMode: .fit)
+                  .frame(width: 44, height: 44)
+                if store.syncStore.mcSession.connectedPeers.count > 0 {
+                  Text("\(store.syncStore.mcSession.connectedPeers.count)")
+                    .font(.footnote)
+                    .padding(4)
+                }
+              }
+            }
+            .tint(Color.white)
+            .frame(width: 80, height: 80)
           }
           .padding()
         }
@@ -770,19 +794,6 @@ struct CameraView: View {
         }
       }
     )
-    .toolbar {
-      ToolbarItem(placement: .primaryAction) {
-        Button {
-          store.isSyncViewPresented.toggle()
-        } label: {
-          Label(
-            "Sync",
-            systemImage: "arrow.trianglehead.2.clockwise.rotate.90"
-          )
-          .labelStyle(.iconOnly)
-        }
-      }
-    }
     .onAppear {
       store.resume()
     }

@@ -26,7 +26,7 @@ final class SyncStore: NSObject, MCSessionDelegate, MCBrowserViewControllerDeleg
 
   private let serviceType = "sync-camera"
   private let myPeerID = MCPeerID(displayName: UIDevice.current.name)
-  private var mcSession: MCSession
+  private(set) var mcSession: MCSession
   private var mcAdvertiserAssistant: MCAdvertiserAssistant
   private var mcNearbyServiceAdvertiser: MCNearbyServiceAdvertiser
 
