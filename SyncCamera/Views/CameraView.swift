@@ -223,6 +223,12 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     return [.auto] + result.map { .value($0) }
   }
 
+  // MARK: - リアルタイム値
+  /// デバイスから取得したリアルタイムのISO値
+  var realTimeISO: Float = 0
+  /// デバイスから取得したリアルタイムのシャッタースピード値（秒）
+  var realTimeShutterSpeed: Double = 0
+
   func updateShutterSpeed(_ shutterSpeed: ShutterSpeed) {
     guard let device = currentVideoInput?.device else { return }
     do {
@@ -278,9 +284,9 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
         guard let self, let device = self.currentVideoInput?.device else {
           return
         }
-        print(
-          "current ISO \(device.iso) shutter speed \(device.exposureDuration.seconds)"
-        )
+
+        self.realTimeISO = device.iso
+        self.realTimeShutterSpeed = device.exposureDuration.seconds
       }
     )
   }
@@ -535,6 +541,30 @@ struct CameraView: View {
         }
       }
 
+      // リアルタイム情報表示
+      VStack {
+        HStack(spacing: 20) {
+          Text("ISO: \(Int(store.realTimeISO))")
+            .font(.system(size: 14, weight: .medium, design: .monospaced))
+            .foregroundColor(.white)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Color.black.opacity(0.6))
+            .cornerRadius(8)
+
+          Text("SS: \(shutterSpeedString(from: store.realTimeShutterSpeed))")
+            .font(.system(size: 14, weight: .medium, design: .monospaced))
+            .foregroundColor(.white)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Color.black.opacity(0.6))
+            .cornerRadius(8)
+        }
+        .padding(.top, 44)
+
+        Spacer()
+      }
+
       VStack(spacing: 16) {
         Spacer()
         Button {
@@ -710,7 +740,7 @@ struct CameraView: View {
         } else {
           HStack {
             Spacer()
-            
+
             Button {
               store.takePhotoFromUser()
             } label: {
@@ -720,7 +750,7 @@ struct CameraView: View {
             .accessibilityLabel(Text("シャッター"))
             .tint(.white)
             .padding(.bottom, 16)
-            
+
             Spacer()
           }
           .padding()
@@ -844,6 +874,43 @@ struct CameraView: View {
     } else {
       return size.height
     }
+  }
+
+  /// TimeInterval（秒）を写真用シャッタースピード表記に変換する。
+  /// 例: 0.008 → "1/125", 0.5 → "1/2", 2.0 → "2″"
+  func shutterSpeedString(
+    from interval: TimeInterval,
+    precisionForLong: Int = 2,
+    usePrimeSymbol: Bool = true
+  ) -> String {
+    // 1 秒以上なら「秒」表記
+    if interval >= 1.0 {
+      // 端数がほぼ 0 なら整数だけを表示
+      if abs(interval.rounded() - interval) < 0.01 {
+        let seconds = Int(interval.rounded())
+        return usePrimeSymbol ? "\(seconds)″" : "\(seconds)s"
+      } else {
+        // 小数部も残っていれば指定桁で丸める
+        let fmt = "%.\(precisionForLong)f"
+        return
+          (usePrimeSymbol
+          ? String(format: fmt + "″", interval)
+          : String(format: fmt + "s", interval))
+      }
+    }
+
+    // 1 秒未満なら「1/分母」表記
+    // ── 定番ストップ（1/60, 1/125 など）に丸めることで見栄えを整える
+    let commonStops: [Double] = [
+      1.0 / 2.0, 1.0 / 4.0, 1.0 / 8.0, 1.0 / 15.0, 1.0 / 30.0, 1.0 / 60.0,
+      1.0 / 100.0, 1.0 / 200.0, 1.0 / 400.0, 1.0 / 800.0, 1.0 / 1600.0,
+      1.0 / 3200.0, 1.0 / 6400.0, 1.0 / 12800.0, 1.0 / 25600.0,
+    ]
+
+    // 最も近いストップを採用
+    let nearest = commonStops.min(by: { abs($0 - interval) < abs($1 - interval) }) ?? interval
+    let denominator = Int(round(1.0 / nearest))
+    return "1/\(denominator)"
   }
 }
 
