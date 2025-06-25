@@ -199,10 +199,12 @@ final class SyncStore: NSObject, MCSessionDelegate, MCBrowserViewControllerDeleg
 
   func browserViewControllerDidFinish(_ browserViewController: MCBrowserViewController) {
     logger.info("\(#function)")
+    browserViewController.dismiss(animated: true)
   }
 
   func browserViewControllerWasCancelled(_ browserViewController: MCBrowserViewController) {
     logger.info("\(#function)")
+    browserViewController.dismiss(animated: true)
   }
 
   // MARK: - MCAdvertiserAssistantDelegate
