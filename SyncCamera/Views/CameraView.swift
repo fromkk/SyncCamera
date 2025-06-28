@@ -690,106 +690,109 @@ struct CameraView: View {
         .contentShape(.rect)
 
         if store.isConfigurationsVisible {
-          HStack(spacing: 32) {
-            Button {
-              if store.configurationMode != .iso {
-                store.configurationMode = .iso
-              } else {
-                store.configurationMode = nil
+          ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 32) {
+              Button {
+                if store.configurationMode != .iso {
+                  store.configurationMode = .iso
+                } else {
+                  store.configurationMode = nil
+                }
+              } label: {
+                Text("ISO")
+                  .padding(8)
+                  .frame(minWidth: 80)
+                  .background(
+                    store.configurationMode == .iso
+                      ? Color.accentColor : Color.clear
+                  )
+                  .foregroundColor(
+                    store.configurationMode == .iso
+                      ? .white : .white.opacity(0.7)
+                  )
+                  .cornerRadius(8)
+                  .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                      .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                  )
               }
-            } label: {
-              Text("ISO")
-                .padding(8)
-                .frame(minWidth: 80)
-                .background(
-                  store.configurationMode == .iso
-                    ? Color.accentColor : Color.clear
-                )
-                .foregroundColor(
-                  store.configurationMode == .iso
-                    ? .white : .white.opacity(0.7)
-                )
-                .cornerRadius(8)
-                .overlay(
-                  RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.white.opacity(0.5), lineWidth: 1)
-                )
-            }
 
-            Button {
-              if store.configurationMode != .shutterSpeed {
-                store.configurationMode = .shutterSpeed
-              } else {
-                store.configurationMode = nil
+              Button {
+                if store.configurationMode != .shutterSpeed {
+                  store.configurationMode = .shutterSpeed
+                } else {
+                  store.configurationMode = nil
+                }
+              } label: {
+                Text("SS")
+                  .padding(8)
+                  .frame(minWidth: 80)
+                  .background(
+                    store.configurationMode == .shutterSpeed
+                      ? Color.accentColor : Color.clear
+                  )
+                  .foregroundColor(
+                    store.configurationMode == .shutterSpeed
+                      ? .white : .white.opacity(0.7)
+                  )
+                  .cornerRadius(8)
+                  .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                      .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                  )
               }
-            } label: {
-              Text("SS")
-                .padding(8)
-                .frame(minWidth: 80)
-                .background(
-                  store.configurationMode == .shutterSpeed
-                    ? Color.accentColor : Color.clear
-                )
-                .foregroundColor(
-                  store.configurationMode == .shutterSpeed
-                    ? .white : .white.opacity(0.7)
-                )
-                .cornerRadius(8)
-                .overlay(
-                  RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.white.opacity(0.5), lineWidth: 1)
-                )
-            }
 
-            Button {
-              if store.configurationMode != .focus {
-                store.configurationMode = .focus
-              } else {
-                store.configurationMode = nil
+              Button {
+                if store.configurationMode != .focus {
+                  store.configurationMode = .focus
+                } else {
+                  store.configurationMode = nil
+                }
+              } label: {
+                Text("Focus")
+                  .padding(8)
+                  .frame(minWidth: 80)
+                  .background(
+                    store.configurationMode == .focus
+                      ? Color.accentColor : Color.clear
+                  )
+                  .foregroundColor(
+                    store.configurationMode == .focus
+                      ? .white : .white.opacity(0.7)
+                  )
+                  .cornerRadius(8)
+                  .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                      .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                  )
               }
-            } label: {
-              Text("Focus")
-                .padding(8)
-                .frame(minWidth: 80)
-                .background(
-                  store.configurationMode == .focus
-                    ? Color.accentColor : Color.clear
-                )
-                .foregroundColor(
-                  store.configurationMode == .focus
-                    ? .white : .white.opacity(0.7)
-                )
-                .cornerRadius(8)
-                .overlay(
-                  RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.white.opacity(0.5), lineWidth: 1)
-                )
-            }
 
-            Button {
-              if store.configurationMode != .whiteBalance {
-                store.configurationMode = .whiteBalance
-              } else {
-                store.configurationMode = nil
+              Button {
+                if store.configurationMode != .whiteBalance {
+                  store.configurationMode = .whiteBalance
+                } else {
+                  store.configurationMode = nil
+                }
+              } label: {
+                Text("WB")
+                  .padding(8)
+                  .frame(minWidth: 80)
+                  .background(
+                    store.configurationMode == .whiteBalance
+                      ? Color.accentColor : Color.clear
+                  )
+                  .foregroundColor(
+                    store.configurationMode == .whiteBalance
+                      ? .white : .white.opacity(0.7)
+                  )
+                  .cornerRadius(8)
+                  .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                      .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                  )
               }
-            } label: {
-              Text("WB")
-                .padding(8)
-                .frame(minWidth: 80)
-                .background(
-                  store.configurationMode == .whiteBalance
-                    ? Color.accentColor : Color.clear
-                )
-                .foregroundColor(
-                  store.configurationMode == .whiteBalance
-                    ? .white : .white.opacity(0.7)
-                )
-                .cornerRadius(8)
-                .overlay(
-                  RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.white.opacity(0.5), lineWidth: 1)
-                )
             }
+            .padding(.horizontal)
           }
           .tint(.white)
           .transition(.move(edge: .bottom).combined(with: .opacity))
