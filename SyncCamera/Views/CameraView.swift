@@ -84,7 +84,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
       switch self {
       case .auto:
         return "AUTO"
-      case let .value(value):
+      case .value(let value):
         return String(format: "%.2f", value)
       }
     }
@@ -105,7 +105,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
           return
         }
         device.focusMode = .continuousAutoFocus
-      case let .value(value):
+      case .value(let value):
         guard device.isFocusModeSupported(.locked) else {
           logger.warning("!device.isFocusModeSupported(.locked)")
           return
@@ -128,7 +128,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
       switch self {
       case .auto:
         return "AUTO"
-      case let .value(value):
+      case .value(let value):
         return "\(value)"
       }
     }
@@ -167,7 +167,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
           return
         }
         device.exposureMode = .autoExpose
-      case let .value(iso):
+      case .value(let iso):
         let duration = device.exposureDuration
         guard device.isExposureModeSupported(.custom) else {
           logger.warning("!device.isExposureModeSupported(.custom)")
@@ -191,7 +191,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
       switch self {
       case .auto:
         return "AUTO"
-      case let .value(seconds):
+      case .value(let seconds):
         if seconds >= 1.0 {
           return String(format: "%.0f\"", seconds)
         } else {
@@ -234,7 +234,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
       switch self {
       case .auto:
         return "AUTO"
-      case let .value(kelvin):
+      case .value(let kelvin):
         return "\(Int(kelvin))K"
       }
     }
@@ -249,38 +249,44 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
 
     // デバイスから実際の色温度範囲を取得
     let availableKelvin = getAvailableColorTemperatures(for: device)
-    
+
     return [.auto] + availableKelvin.map { .value($0) }
   }
-  
-  private func getAvailableColorTemperatures(for device: AVCaptureDevice) -> [Float] {
+
+  private func getAvailableColorTemperatures(for device: AVCaptureDevice)
+    -> [Float]
+  {
     // 一般的な色温度範囲をテストして、デバイスが対応しているものを抽出
     let testTemperatures: [Float] = [
-      2000, 2500, 3000, 3200, 3500, 4000, 4500, 5000, 5500, 5600, 6000, 6500, 7000, 7500, 8000, 9000, 10000
+      2000, 2500, 3000, 3200, 3500, 4000, 4500, 5000, 5500, 5600, 6000, 6500,
+      7000, 7500, 8000, 9000, 10000,
     ]
-    
+
     var supportedTemperatures: [Float] = []
-    
+
     for temperature in testTemperatures {
-      let temperatureAndTint = AVCaptureDevice.WhiteBalanceTemperatureAndTintValues(
-        temperature: temperature,
-        tint: 0
-      )
+      let temperatureAndTint =
+        AVCaptureDevice.WhiteBalanceTemperatureAndTintValues(
+          temperature: temperature,
+          tint: 0
+        )
       let gains = device.deviceWhiteBalanceGains(for: temperatureAndTint)
-      
+
       // ゲイン値が有効範囲内かチェック
-      if gains.redGain >= 1.0 && gains.redGain <= device.maxWhiteBalanceGain &&
-         gains.greenGain >= 1.0 && gains.greenGain <= device.maxWhiteBalanceGain &&
-         gains.blueGain >= 1.0 && gains.blueGain <= device.maxWhiteBalanceGain {
+      if gains.redGain >= 1.0 && gains.redGain <= device.maxWhiteBalanceGain
+        && gains.greenGain >= 1.0
+        && gains.greenGain <= device.maxWhiteBalanceGain
+        && gains.blueGain >= 1.0 && gains.blueGain <= device.maxWhiteBalanceGain
+      {
         supportedTemperatures.append(temperature)
       }
     }
-    
+
     // サポートされている色温度がない場合は、安全な範囲を返す
     if supportedTemperatures.isEmpty {
       return [3000, 4000, 5000, 6000, 7000]
     }
-    
+
     return supportedTemperatures
   }
 
@@ -292,21 +298,25 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
 
       switch whiteBalance {
       case .auto:
-        guard device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) else {
-          logger.warning("!device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance)")
+        guard device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance)
+        else {
+          logger.warning(
+            "!device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance)"
+          )
           return
         }
         device.whiteBalanceMode = .continuousAutoWhiteBalance
-      case let .value(kelvin):
+      case .value(let kelvin):
         guard device.isWhiteBalanceModeSupported(.locked) else {
           logger.warning("!device.isWhiteBalanceModeSupported(.locked)")
           return
         }
         device.whiteBalanceMode = .locked
-        let temperatureAndTint = AVCaptureDevice.WhiteBalanceTemperatureAndTintValues(
-          temperature: kelvin,
-          tint: 0
-        )
+        let temperatureAndTint =
+          AVCaptureDevice.WhiteBalanceTemperatureAndTintValues(
+            temperature: kelvin,
+            tint: 0
+          )
         let gains = device.deviceWhiteBalanceGains(for: temperatureAndTint)
         device.setWhiteBalanceModeLocked(with: gains)
       }
@@ -336,7 +346,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
           return
         }
         device.exposureMode = .autoExpose
-      case let .value(seconds):
+      case .value(let seconds):
         let iso = device.iso
         guard device.isExposureModeSupported(.custom) else {
           logger.warning("!device.isExposureModeSupported(.custom)")
@@ -381,7 +391,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
 
         self.realTimeISO = device.iso
         self.realTimeShutterSpeed = device.exposureDuration.seconds
-        
+
         // ホワイトバランスゲインを安全に取得
         let gains = device.deviceWhiteBalanceGains
         if gains.redGain > 0 && gains.greenGain > 0 && gains.blueGain > 0 {
@@ -689,288 +699,292 @@ struct CameraView: View {
         .tint(.white.opacity(0.5))
         .contentShape(.rect)
 
-        if store.isConfigurationsVisible {
-          ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 32) {
-              Button {
-                if store.configurationMode != .iso {
-                  store.configurationMode = .iso
-                } else {
-                  store.configurationMode = nil
+        VStack(spacing: 16) {
+          if store.isConfigurationsVisible {
+            ScrollView(.horizontal, showsIndicators: false) {
+              HStack(spacing: 32) {
+                Button {
+                  if store.configurationMode != .iso {
+                    store.configurationMode = .iso
+                  } else {
+                    store.configurationMode = nil
+                  }
+                } label: {
+                  Text("ISO")
+                    .padding(8)
+                    .frame(minWidth: 80)
+                    .background(
+                      store.configurationMode == .iso
+                        ? Color.accentColor : Color.clear
+                    )
+                    .foregroundColor(
+                      store.configurationMode == .iso
+                        ? .white : .white.opacity(0.7)
+                    )
+                    .cornerRadius(8)
+                    .overlay(
+                      RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                    )
                 }
-              } label: {
-                Text("ISO")
-                  .padding(8)
-                  .frame(minWidth: 80)
-                  .background(
-                    store.configurationMode == .iso
-                      ? Color.accentColor : Color.clear
-                  )
-                  .foregroundColor(
-                    store.configurationMode == .iso
-                      ? .white : .white.opacity(0.7)
-                  )
-                  .cornerRadius(8)
-                  .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                      .stroke(Color.white.opacity(0.5), lineWidth: 1)
-                  )
-              }
 
-              Button {
-                if store.configurationMode != .shutterSpeed {
-                  store.configurationMode = .shutterSpeed
-                } else {
-                  store.configurationMode = nil
+                Button {
+                  if store.configurationMode != .shutterSpeed {
+                    store.configurationMode = .shutterSpeed
+                  } else {
+                    store.configurationMode = nil
+                  }
+                } label: {
+                  Text("SS")
+                    .padding(8)
+                    .frame(minWidth: 80)
+                    .background(
+                      store.configurationMode == .shutterSpeed
+                        ? Color.accentColor : Color.clear
+                    )
+                    .foregroundColor(
+                      store.configurationMode == .shutterSpeed
+                        ? .white : .white.opacity(0.7)
+                    )
+                    .cornerRadius(8)
+                    .overlay(
+                      RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                    )
                 }
-              } label: {
-                Text("SS")
-                  .padding(8)
-                  .frame(minWidth: 80)
-                  .background(
-                    store.configurationMode == .shutterSpeed
-                      ? Color.accentColor : Color.clear
-                  )
-                  .foregroundColor(
-                    store.configurationMode == .shutterSpeed
-                      ? .white : .white.opacity(0.7)
-                  )
-                  .cornerRadius(8)
-                  .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                      .stroke(Color.white.opacity(0.5), lineWidth: 1)
-                  )
-              }
 
-              Button {
-                if store.configurationMode != .focus {
-                  store.configurationMode = .focus
-                } else {
-                  store.configurationMode = nil
+                Button {
+                  if store.configurationMode != .focus {
+                    store.configurationMode = .focus
+                  } else {
+                    store.configurationMode = nil
+                  }
+                } label: {
+                  Text("Focus")
+                    .padding(8)
+                    .frame(minWidth: 80)
+                    .background(
+                      store.configurationMode == .focus
+                        ? Color.accentColor : Color.clear
+                    )
+                    .foregroundColor(
+                      store.configurationMode == .focus
+                        ? .white : .white.opacity(0.7)
+                    )
+                    .cornerRadius(8)
+                    .overlay(
+                      RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                    )
                 }
-              } label: {
-                Text("Focus")
-                  .padding(8)
-                  .frame(minWidth: 80)
-                  .background(
-                    store.configurationMode == .focus
-                      ? Color.accentColor : Color.clear
-                  )
-                  .foregroundColor(
-                    store.configurationMode == .focus
-                      ? .white : .white.opacity(0.7)
-                  )
-                  .cornerRadius(8)
-                  .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                      .stroke(Color.white.opacity(0.5), lineWidth: 1)
-                  )
-              }
 
-              Button {
-                if store.configurationMode != .whiteBalance {
-                  store.configurationMode = .whiteBalance
-                } else {
-                  store.configurationMode = nil
+                Button {
+                  if store.configurationMode != .whiteBalance {
+                    store.configurationMode = .whiteBalance
+                  } else {
+                    store.configurationMode = nil
+                  }
+                } label: {
+                  Text("WB")
+                    .padding(8)
+                    .frame(minWidth: 80)
+                    .background(
+                      store.configurationMode == .whiteBalance
+                        ? Color.accentColor : Color.clear
+                    )
+                    .foregroundColor(
+                      store.configurationMode == .whiteBalance
+                        ? .white : .white.opacity(0.7)
+                    )
+                    .cornerRadius(8)
+                    .overlay(
+                      RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                    )
                 }
-              } label: {
-                Text("WB")
-                  .padding(8)
-                  .frame(minWidth: 80)
-                  .background(
-                    store.configurationMode == .whiteBalance
-                      ? Color.accentColor : Color.clear
-                  )
-                  .foregroundColor(
-                    store.configurationMode == .whiteBalance
-                      ? .white : .white.opacity(0.7)
-                  )
-                  .cornerRadius(8)
-                  .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                      .stroke(Color.white.opacity(0.5), lineWidth: 1)
-                  )
               }
+              .padding(.horizontal)
             }
-            .padding(.horizontal)
-          }
-          .tint(.white)
-          .transition(.move(edge: .bottom).combined(with: .opacity))
-        }
-
-        if let configurationMode = store.configurationMode {
-          switch configurationMode {
-          case .iso:
-            SlideDialView(
-              allValues: store.isoValues,
-              selection: Binding(
-                get: {
-                  store.currentISO
-                },
-                set: {
-                  store.currentISO = $0
-                  guard let iso = $0 else { return }
-                  store.updateISO(iso)
-                }
-              )
-            )
-          case .shutterSpeed:
-            SlideDialView(
-              allValues: store.shutterSpeedValues,
-              selection: Binding(
-                get: {
-                  store.currentShutterSpeed
-                },
-                set: {
-                  store.currentShutterSpeed = $0
-                  guard let ss = $0 else { return }
-                  store.updateShutterSpeed(ss)
-                }
-              )
-            )
-          case .focus:
-            HStack(spacing: 16) {
-              Button {
-                if store.currentFocus == .auto {
-                  let focus: CameraStore.FocusMode = .value(0)
-                  store.currentFocus = focus
-                  store.updateFocus(focus)
-                } else {
-                  store.currentFocus = .auto
-                }
-              } label: {
-                Text("AUTO")
-              }
-              .padding(8)
-              .frame(minWidth: 80)
-              .background(
-                store.currentFocus == .auto ? Color.accentColor : Color.clear
-              )
-              .foregroundColor(
-                store.currentFocus == .auto ? .white : .white.opacity(0.7)
-              )
-              .cornerRadius(8)
-              .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                  .stroke(Color.white.opacity(0.5), lineWidth: 1)
-              )
-
-              if store.currentFocus != .auto {
-                Slider(
-                  value: Binding<Float>(
-                    get: {
-                      switch store.currentFocus {
-                      case .value(let float):
-                        return float
-                      case .auto, .none:
-                        return 0
-                      }
-                    },
-                    set: { float in
-                      let value: CameraStore.FocusMode = .value(float)
-                      store.currentFocus = value
-                      store.updateFocus(value)
-                    }
-                  )
-                )
-              }
-            }
-            .padding(.horizontal)
-          case .whiteBalance:
-            HStack(spacing: 16) {
-              Button {
-                if store.currentWhiteBalance == .auto {
-                  let whiteBalance: CameraStore.WhiteBalance = .value(5500)
-                  store.currentWhiteBalance = whiteBalance
-                  store.updateWhiteBalance(whiteBalance)
-                } else {
-                  store.currentWhiteBalance = .auto
-                  store.updateWhiteBalance(.auto)
-                }
-              } label: {
-                Text("AUTO")
-              }
-              .padding(8)
-              .frame(minWidth: 80)
-              .background(
-                store.currentWhiteBalance == .auto ? Color.accentColor : Color.clear
-              )
-              .foregroundColor(
-                store.currentWhiteBalance == .auto ? .white : .white.opacity(0.7)
-              )
-              .cornerRadius(8)
-              .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                  .stroke(Color.white.opacity(0.5), lineWidth: 1)
-              )
-
-              if store.currentWhiteBalance != .auto {
-                Slider(
-                  value: Binding<Float>(
-                    get: {
-                      switch store.currentWhiteBalance {
-                      case .value(let kelvin):
-                        return kelvin
-                      case .auto, .none:
-                        return 5500
-                      }
-                    },
-                    set: { kelvin in
-                      let value: CameraStore.WhiteBalance = .value(kelvin)
-                      store.currentWhiteBalance = value
-                      store.updateWhiteBalance(value)
-                    }
-                  ),
-                  in: 2500...8000,
-                  step: 100
-                )
-              }
-            }
-            .padding(.horizontal)
-          }
-        } else {
-          HStack {
-            // Left placeholder to balance the sync button
-            Spacer()
-              .frame(width: 80)
-
-            Spacer()
-
-            // Shutter button in the middle
-            Button {
-              store.takePhotoFromUser()
-            } label: {
-              Circle()
-                .frame(width: 80, height: 80)
-            }
-            .accessibilityLabel(Text("シャッター"))
             .tint(.white)
-            .padding(.bottom, 16)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+          }
 
-            Spacer()
+          if let configurationMode = store.configurationMode {
+            switch configurationMode {
+            case .iso:
+              SlideDialView(
+                allValues: store.isoValues,
+                selection: Binding(
+                  get: {
+                    store.currentISO
+                  },
+                  set: {
+                    store.currentISO = $0
+                    guard let iso = $0 else { return }
+                    store.updateISO(iso)
+                  }
+                )
+              )
+            case .shutterSpeed:
+              SlideDialView(
+                allValues: store.shutterSpeedValues,
+                selection: Binding(
+                  get: {
+                    store.currentShutterSpeed
+                  },
+                  set: {
+                    store.currentShutterSpeed = $0
+                    guard let ss = $0 else { return }
+                    store.updateShutterSpeed(ss)
+                  }
+                )
+              )
+            case .focus:
+              HStack(spacing: 16) {
+                Button {
+                  if store.currentFocus == .auto {
+                    let focus: CameraStore.FocusMode = .value(0)
+                    store.currentFocus = focus
+                    store.updateFocus(focus)
+                  } else {
+                    store.currentFocus = .auto
+                  }
+                } label: {
+                  Text("AUTO")
+                }
+                .padding(8)
+                .frame(minWidth: 80)
+                .background(
+                  store.currentFocus == .auto ? Color.accentColor : Color.clear
+                )
+                .foregroundColor(
+                  store.currentFocus == .auto ? .white : .white.opacity(0.7)
+                )
+                .cornerRadius(8)
+                .overlay(
+                  RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                )
 
-            // Sync button on the right
-            Button {
-              store.isSyncViewPresented.toggle()
-            } label: {
-              HStack {
-                Image(systemName: "arrow.triangle.2.circlepath.camera")
-                  .resizable()
-                  .aspectRatio(contentMode: .fit)
-                  .frame(width: 44, height: 44)
-                if store.syncStore.mcSession.connectedPeers.count > 0 {
-                  Text("\(store.syncStore.mcSession.connectedPeers.count)")
-                    .font(.footnote)
-                    .padding(4)
+                if store.currentFocus != .auto {
+                  Slider(
+                    value: Binding<Float>(
+                      get: {
+                        switch store.currentFocus {
+                        case .value(let float):
+                          return float
+                        case .auto, .none:
+                          return 0
+                        }
+                      },
+                      set: { float in
+                        let value: CameraStore.FocusMode = .value(float)
+                        store.currentFocus = value
+                        store.updateFocus(value)
+                      }
+                    )
+                  )
                 }
               }
-            }
-            .tint(Color.white)
-            .frame(width: 80, height: 80)
-          }
-          .padding()
-        }
+              .padding(.horizontal)
+            case .whiteBalance:
+              HStack(spacing: 16) {
+                Button {
+                  if store.currentWhiteBalance == .auto {
+                    let whiteBalance: CameraStore.WhiteBalance = .value(5500)
+                    store.currentWhiteBalance = whiteBalance
+                    store.updateWhiteBalance(whiteBalance)
+                  } else {
+                    store.currentWhiteBalance = .auto
+                    store.updateWhiteBalance(.auto)
+                  }
+                } label: {
+                  Text("AUTO")
+                }
+                .padding(8)
+                .frame(minWidth: 80)
+                .background(
+                  store.currentWhiteBalance == .auto
+                    ? Color.accentColor : Color.clear
+                )
+                .foregroundColor(
+                  store.currentWhiteBalance == .auto
+                    ? .white : .white.opacity(0.7)
+                )
+                .cornerRadius(8)
+                .overlay(
+                  RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                )
 
+                if store.currentWhiteBalance != .auto {
+                  Slider(
+                    value: Binding<Float>(
+                      get: {
+                        switch store.currentWhiteBalance {
+                        case .value(let kelvin):
+                          return kelvin
+                        case .auto, .none:
+                          return 5500
+                        }
+                      },
+                      set: { kelvin in
+                        let value: CameraStore.WhiteBalance = .value(kelvin)
+                        store.currentWhiteBalance = value
+                        store.updateWhiteBalance(value)
+                      }
+                    ),
+                    in: 2500...8000,
+                    step: 100
+                  )
+                }
+              }
+              .padding(.horizontal)
+            }
+          } else {
+            HStack {
+              // Left placeholder to balance the sync button
+              Spacer()
+                .frame(width: 80)
+
+              Spacer()
+
+              // Shutter button in the middle
+              Button {
+                store.takePhotoFromUser()
+              } label: {
+                Circle()
+                  .frame(width: 80, height: 80)
+              }
+              .accessibilityLabel(Text("シャッター"))
+              .tint(.white)
+              .padding(.bottom, 16)
+
+              Spacer()
+
+              // Sync button on the right
+              Button {
+                store.isSyncViewPresented.toggle()
+              } label: {
+                HStack {
+                  Image(systemName: "arrow.triangle.2.circlepath.camera")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 44, height: 44)
+                  if store.syncStore.mcSession.connectedPeers.count > 0 {
+                    Text("\(store.syncStore.mcSession.connectedPeers.count)")
+                      .font(.footnote)
+                      .padding(4)
+                  }
+                }
+              }
+              .tint(Color.white)
+              .frame(width: 80, height: 80)
+            }
+            .padding()
+          }
+        }
+        .background(Color.black)
       }
       .animation(.default, value: store.isConfigurationsVisible)
     }
@@ -1127,7 +1141,9 @@ struct CameraView: View {
     ]
 
     // 最も近いストップを採用
-    let nearest = commonStops.min(by: { abs($0 - interval) < abs($1 - interval) }) ?? interval
+    let nearest =
+      commonStops.min(by: { abs($0 - interval) < abs($1 - interval) })
+      ?? interval
     let denominator = Int(round(1.0 / nearest))
     return "1/\(denominator)"
   }
