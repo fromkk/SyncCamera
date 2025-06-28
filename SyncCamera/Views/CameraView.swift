@@ -72,6 +72,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     case iso
     case shutterSpeed
     case focus
+    case whiteBalance
   }
   // MARK: - Focus
 
@@ -223,11 +224,74 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     return [.auto] + result.map { .value($0) }
   }
 
+  // MARK: - White Balance
+
+  enum WhiteBalance: Hashable, CustomStringConvertible {
+    case auto
+    case value(Float)  // 色温度（K）
+
+    var description: String {
+      switch self {
+      case .auto:
+        return "AUTO"
+      case let .value(kelvin):
+        return "\(Int(kelvin))K"
+      }
+    }
+  }
+
+  var currentWhiteBalance: WhiteBalance? = .auto
+
+  var whiteBalanceValues: [WhiteBalance] {
+    guard let device = currentVideoInput?.device else {
+      return [.auto]
+    }
+
+    let availableKelvin: [Float] = [
+      2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000, 6500, 7000, 7500, 8000
+    ]
+    
+    return [.auto] + availableKelvin.map { .value($0) }
+  }
+
+  func updateWhiteBalance(_ whiteBalance: WhiteBalance) {
+    guard let device = currentVideoInput?.device else { return }
+    do {
+      try device.lockForConfiguration()
+      defer { device.unlockForConfiguration() }
+
+      switch whiteBalance {
+      case .auto:
+        guard device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) else {
+          logger.warning("!device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance)")
+          return
+        }
+        device.whiteBalanceMode = .continuousAutoWhiteBalance
+      case let .value(kelvin):
+        guard device.isWhiteBalanceModeSupported(.locked) else {
+          logger.warning("!device.isWhiteBalanceModeSupported(.locked)")
+          return
+        }
+        device.whiteBalanceMode = .locked
+        let temperatureAndTint = AVCaptureDevice.WhiteBalanceTemperatureAndTintValues(
+          temperature: kelvin,
+          tint: 0
+        )
+        let gains = device.deviceWhiteBalanceGains(for: temperatureAndTint)
+        device.setWhiteBalanceModeLocked(with: gains)
+      }
+    } catch {
+      logger.error("error \(error.localizedDescription)")
+    }
+  }
+
   // MARK: - リアルタイム値
   /// デバイスから取得したリアルタイムのISO値
   var realTimeISO: Float = 0
   /// デバイスから取得したリアルタイムのシャッタースピード値（秒）
   var realTimeShutterSpeed: Double = 0
+  /// デバイスから取得したリアルタイムのホワイトバランス値（色温度K）
+  var realTimeWhiteBalance: Float = 0
 
   func updateShutterSpeed(_ shutterSpeed: ShutterSpeed) {
     guard let device = currentVideoInput?.device else { return }
@@ -287,6 +351,16 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
 
         self.realTimeISO = device.iso
         self.realTimeShutterSpeed = device.exposureDuration.seconds
+        
+        // ホワイトバランスゲインを安全に取得
+        let gains = device.deviceWhiteBalanceGains
+        if gains.redGain > 0 && gains.greenGain > 0 && gains.blueGain > 0 {
+          let temperatureAndTint = device.temperatureAndTintValues(for: gains)
+          self.realTimeWhiteBalance = temperatureAndTint.temperature
+        } else {
+          // デフォルト値を使用
+          self.realTimeWhiteBalance = 5500
+        }
       }
     )
   }
@@ -559,6 +633,14 @@ struct CameraView: View {
             .padding(.vertical, 6)
             .background(Color.black.opacity(0.6))
             .cornerRadius(8)
+
+          Text("WB: \(Int(store.realTimeWhiteBalance))K")
+            .font(.system(size: 14, weight: .medium, design: .monospaced))
+            .foregroundColor(.white)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Color.black.opacity(0.6))
+            .cornerRadius(8)
         }
         .padding(.top, 44)
 
@@ -653,6 +735,31 @@ struct CameraView: View {
                     .stroke(Color.white.opacity(0.5), lineWidth: 1)
                 )
             }
+
+            Button {
+              if store.configurationMode != .whiteBalance {
+                store.configurationMode = .whiteBalance
+              } else {
+                store.configurationMode = nil
+              }
+            } label: {
+              Text("WB")
+                .padding(8)
+                .frame(minWidth: 80)
+                .background(
+                  store.configurationMode == .whiteBalance
+                    ? Color.accentColor : Color.clear
+                )
+                .foregroundColor(
+                  store.configurationMode == .whiteBalance
+                    ? .white : .white.opacity(0.7)
+                )
+                .cornerRadius(8)
+                .overlay(
+                  RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.white.opacity(0.5), lineWidth: 1)
+                )
+            }
           }
           .tint(.white)
           .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -732,6 +839,57 @@ struct CameraView: View {
                       store.updateFocus(value)
                     }
                   )
+                )
+              }
+            }
+            .padding(.horizontal)
+          case .whiteBalance:
+            HStack(spacing: 16) {
+              Button {
+                if store.currentWhiteBalance == .auto {
+                  let whiteBalance: CameraStore.WhiteBalance = .value(5500)
+                  store.currentWhiteBalance = whiteBalance
+                  store.updateWhiteBalance(whiteBalance)
+                } else {
+                  store.currentWhiteBalance = .auto
+                  store.updateWhiteBalance(.auto)
+                }
+              } label: {
+                Text("AUTO")
+              }
+              .padding(8)
+              .frame(minWidth: 80)
+              .background(
+                store.currentWhiteBalance == .auto ? Color.accentColor : Color.clear
+              )
+              .foregroundColor(
+                store.currentWhiteBalance == .auto ? .white : .white.opacity(0.7)
+              )
+              .cornerRadius(8)
+              .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                  .stroke(Color.white.opacity(0.5), lineWidth: 1)
+              )
+
+              if store.currentWhiteBalance != .auto {
+                Slider(
+                  value: Binding<Float>(
+                    get: {
+                      switch store.currentWhiteBalance {
+                      case .value(let kelvin):
+                        return kelvin
+                      case .auto, .none:
+                        return 5500
+                      }
+                    },
+                    set: { kelvin in
+                      let value: CameraStore.WhiteBalance = .value(kelvin)
+                      store.currentWhiteBalance = value
+                      store.updateWhiteBalance(value)
+                    }
+                  ),
+                  in: 2500...8000,
+                  step: 100
                 )
               }
             }
