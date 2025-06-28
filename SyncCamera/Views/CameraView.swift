@@ -247,11 +247,41 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
       return [.auto]
     }
 
-    let availableKelvin: [Float] = [
-      2500, 3000, 3500, 4000, 4500, 5000, 5500, 6000, 6500, 7000, 7500, 8000
-    ]
+    // デバイスから実際の色温度範囲を取得
+    let availableKelvin = getAvailableColorTemperatures(for: device)
     
     return [.auto] + availableKelvin.map { .value($0) }
+  }
+  
+  private func getAvailableColorTemperatures(for device: AVCaptureDevice) -> [Float] {
+    // 一般的な色温度範囲をテストして、デバイスが対応しているものを抽出
+    let testTemperatures: [Float] = [
+      2000, 2500, 3000, 3200, 3500, 4000, 4500, 5000, 5500, 5600, 6000, 6500, 7000, 7500, 8000, 9000, 10000
+    ]
+    
+    var supportedTemperatures: [Float] = []
+    
+    for temperature in testTemperatures {
+      let temperatureAndTint = AVCaptureDevice.WhiteBalanceTemperatureAndTintValues(
+        temperature: temperature,
+        tint: 0
+      )
+      let gains = device.deviceWhiteBalanceGains(for: temperatureAndTint)
+      
+      // ゲイン値が有効範囲内かチェック
+      if gains.redGain >= 1.0 && gains.redGain <= device.maxWhiteBalanceGain &&
+         gains.greenGain >= 1.0 && gains.greenGain <= device.maxWhiteBalanceGain &&
+         gains.blueGain >= 1.0 && gains.blueGain <= device.maxWhiteBalanceGain {
+        supportedTemperatures.append(temperature)
+      }
+    }
+    
+    // サポートされている色温度がない場合は、安全な範囲を返す
+    if supportedTemperatures.isEmpty {
+      return [3000, 4000, 5000, 6000, 7000]
+    }
+    
+    return supportedTemperatures
   }
 
   func updateWhiteBalance(_ whiteBalance: WhiteBalance) {
