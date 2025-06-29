@@ -1140,6 +1140,9 @@ struct CameraView: View {
     } message: { _ in
       Text("接続しますか？")
     }
+    .captureEvent {
+      store.takePhotoFromUser()
+    }
   }
 
   @ViewBuilder
