@@ -192,10 +192,10 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
       case .auto:
         return "AUTO"
       case .value(let seconds):
-        if seconds >= 1.0 {
-          return String(format: "%.0f\"", seconds)
+        if 1 / seconds >= 1.0 {
+          return String(format: "%.0fs", seconds)
         } else {
-          return "1/\(Int(round(1.0 / seconds)))"
+          return "\(Int(seconds))"
         }
       }
     }
@@ -211,14 +211,13 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     let minDuration = device.activeFormat.minExposureDuration
     let maxDuration = device.activeFormat.maxExposureDuration
 
+    /// 一般的なシャッタースピード（1/秒 形式の分母のリスト）
     let availableSeconds: [Double] = [
-      1.0, 1.0 / 2.0, 1.0 / 4.0, 1.0 / 8.0, 1.0 / 15.0, 1.0 / 30.0, 1.0 / 60.0,
-      1.0 / 100.0, 1.0 / 200.0, 1.0 / 400.0, 1.0 / 800.0, 1.0 / 1600.0,
-      1.0 / 3200.0, 1.0 / 6400.0, 1.0 / 12800.0, 1.0 / 25600.0,
+      2, 4, 8, 15, 30, 60, 125, 250, 500, 1000, 2000, 4000, 8000
     ]
 
     let result = availableSeconds.filter {
-      minDuration.seconds <= $0 && $0 <= maxDuration.seconds
+      minDuration.seconds <= 1 / $0 && 1 / $0 <= maxDuration.seconds
     }
 
     return [.auto] + result.map { .value($0) }
@@ -355,7 +354,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
         device.exposureMode = .custom
         device.setExposureModeCustom(
           duration: CMTimeMakeWithSeconds(
-            seconds,
+            1 / seconds,
             preferredTimescale: 1_000_000
           ),
           iso: iso
@@ -812,8 +811,8 @@ struct CameraView: View {
           if let configurationMode = store.configurationMode {
             switch configurationMode {
             case .iso:
-              SlideDialView(
-                allValues: store.isoValues,
+              DialView(
+                allValue: store.isoValues,
                 selection: Binding(
                   get: {
                     store.currentISO
@@ -824,10 +823,20 @@ struct CameraView: View {
                     store.updateISO(iso)
                   }
                 )
-              )
+              ) { value in
+                VStack(spacing: 8) {
+                  Rectangle()
+                    .fill(store.currentISO == value ? Color.yellow : Color.white)
+                    .frame(width: 2, height: 10)
+                  Text(value.description)
+                    .font(.caption2)
+                    .foregroundColor(store.currentISO == value ? .yellow : .white)
+                }
+                .frame(width: 90)
+              }
             case .shutterSpeed:
-              SlideDialView(
-                allValues: store.shutterSpeedValues,
+              DialView(
+                allValue: store.shutterSpeedValues,
                 selection: Binding(
                   get: {
                     store.currentShutterSpeed
@@ -838,7 +847,19 @@ struct CameraView: View {
                     store.updateShutterSpeed(ss)
                   }
                 )
-              )
+              ) { value in
+                VStack(spacing: 8) {
+                  Rectangle()
+                    .fill(store.currentShutterSpeed == value ? Color.yellow : Color.white)
+                    .frame(width: 2, height: 10)
+                  Text(value.description)
+                    .font(.caption2)
+                    .foregroundColor(
+                      store.currentShutterSpeed == value ? .yellow : .white
+                    )
+                }
+                .frame(width: 90)
+              }
             case .focus:
               HStack(spacing: 16) {
                 Button {
@@ -1152,3 +1173,4 @@ struct CameraView: View {
 #Preview {
   CameraView(store: CameraStore())
 }
+
