@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct SlideDialView<Value: Hashable & CustomStringConvertible>: View {
-  let allValues: [Value]
+  var allValues: [Value]
   @Binding var selection: Value?
   init(allValues: [Value], selection: Binding<Value?>) {
     self.allValues = allValues
@@ -12,30 +12,37 @@ struct SlideDialView<Value: Hashable & CustomStringConvertible>: View {
     VStack {
       GeometryReader { geometryProxy in
         ZStack(alignment: .center) {
-          ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 24) {
-              ForEach(allValues, id: \.self) { currentValue in
-                VStack(spacing: 8) {
-                  Rectangle()
-                    .fill(selection == currentValue ? Color.yellow : Color.white)
-                    .frame(width: 2, height: 20)
-                  Text(currentValue.description)
-                    .font(.caption2)
-                    .foregroundColor(selection == currentValue ? .yellow : .white)
+          ScrollViewReader { scrollProxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+              HStack(spacing: 24) {
+                ForEach(allValues, id: \.self) { currentValue in
+                  VStack(spacing: 8) {
+                    Rectangle()
+                      .fill(selection == currentValue ? Color.yellow : Color.white)
+                      .frame(width: 2, height: 20)
+                    Text(currentValue.description)
+                      .font(.caption2)
+                      .foregroundColor(selection == currentValue ? .yellow : .white)
+                  }
+                  .frame(width: 48)
+                  .contentShape(Rectangle())
                 }
-                .frame(width: 48)
-                .contentShape(Rectangle())
+              }
+              .scrollTargetLayout()
+            }
+            .contentMargins(
+              .horizontal,
+              geometryProxy.size.width / 2 - 24,
+              for: .scrollContent
+            )
+            .scrollTargetBehavior(.viewAligned)
+            .scrollPosition(id: $selection, anchor: .center)
+            .onAppear {
+              if let selection {
+                scrollProxy.scrollTo(selection)
               }
             }
-            .scrollTargetLayout()
           }
-          .contentMargins(
-            .horizontal,
-            geometryProxy.size.width / 2 - 24,
-            for: .scrollContent
-          )
-          .scrollTargetBehavior(.viewAligned)
-          .scrollPosition(id: $selection, anchor: .center)
 
           // 中央のインジケーター
           Rectangle()
