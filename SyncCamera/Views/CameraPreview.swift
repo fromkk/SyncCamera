@@ -64,17 +64,24 @@ struct CameraPreview: UIViewControllerRepresentable {
   ) {
     previewLayer.frame = uiViewController.view.frame
 
-    switch orientation {
-    case .portrait:
-      previewLayer.connection?.videoRotationAngle = 90
-    case .landscapeLeft:
-      previewLayer.connection?.videoRotationAngle = 0
-    case .landscapeRight:
-      previewLayer.connection?.videoRotationAngle = 180
-    case .portraitUpsideDown:
-      previewLayer.connection?.videoRotationAngle = 270
-    default:
-      previewLayer.connection?.videoRotationAngle = 90
+    if let connection = previewLayer.connection {
+      let rotationAngle: CGFloat
+      switch orientation {
+      case .portrait:
+        rotationAngle = 90
+      case .landscapeLeft:
+        rotationAngle = 0
+      case .landscapeRight:
+        rotationAngle = 180
+      case .portraitUpsideDown:
+        rotationAngle = 270
+      default:
+        rotationAngle = 90
+      }
+
+      if connection.isVideoRotationAngleSupported(rotationAngle) {
+        connection.videoRotationAngle = rotationAngle
+      }
     }
   }
 }

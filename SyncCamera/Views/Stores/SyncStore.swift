@@ -104,19 +104,19 @@ final class SyncStore: NSObject, MCSessionDelegate, MCBrowserViewControllerDeleg
       self.error = error
     }
   }
-    
+
   /// 招待を承諾する
   func acceptInvitation() {
-      guard let invitation = pendingInvitation else { return }
-      invitation.handler(true, mcSession)
-      pendingInvitation = nil
+    guard let invitation = pendingInvitation else { return }
+    invitation.handler(true, mcSession)
+    pendingInvitation = nil
   }
 
   /// 招待を拒否する
   func declineInvitation() {
-      guard let invitation = pendingInvitation else { return }
-      invitation.handler(false, nil)
-      pendingInvitation = nil
+    guard let invitation = pendingInvitation else { return }
+    invitation.handler(false, nil)
+    pendingInvitation = nil
   }
 
   // MARK: - MCSessionDelegate

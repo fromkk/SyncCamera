@@ -1,4 +1,5 @@
 import AVFoundation
+import ImageIO
 import OSLog
 import Observation
 import Photos
@@ -583,27 +584,81 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     queue.async { [weak self] in
       guard let self else { return }
       let settings = self.capturePhotoSettings()
+
+      // Set photo orientation based on current device orientation
+      if let photoConnection = self.photoOutput.connection(with: .video) {
+        let orientation = self.currentOrientation ?? .portrait
+        let rotationAngle = self.photoRotationAngle(for: orientation)
+        if photoConnection.isVideoRotationAngleSupported(rotationAngle) {
+          photoConnection.videoRotationAngle = rotationAngle
+        }
+      }
+
       self.photoOutput.capturePhoto(with: settings, delegate: self)
     }
   }
-  
+
   enum PhotoFormat {
     case jpeg
     case heic
   }
-  
+
   var photoFormat: PhotoFormat = .jpeg
-  
+
   private func capturePhotoSettings() -> AVCapturePhotoSettings {
     let settings = AVCapturePhotoSettings(
-      format: [AVVideoCodecKey: photoFormat == .jpeg ? AVVideoCodecType.jpeg : AVVideoCodecType.hevc]
+      format: [
+        AVVideoCodecKey: photoFormat == .jpeg ? AVVideoCodecType.jpeg : AVVideoCodecType.hevc
+      ]
     )
-    
+
     var meta: [String: Any] = [:]
-    meta[kCGImagePropertyTIFFSoftware as String] = Bundle.main.infoDictionary?["CFBundleDisplayName"] as? String ?? "SyncCamera"
+    meta[kCGImagePropertyTIFFSoftware as String] =
+      Bundle.main.infoDictionary?["CFBundleDisplayName"] as? String ?? "SyncCamera"
     settings.metadata["{TIFF}"] = meta
 
+    // Add EXIF orientation metadata
+    var exifDict: [String: Any] = [:]
+    exifDict[kCGImagePropertyExifPixelXDimension as String] = 4000
+    exifDict[kCGImagePropertyExifPixelYDimension as String] = 3000
+
+    let orientation = exifOrientation(for: currentOrientation ?? .portrait)
+    exifDict[kCGImagePropertyOrientation as String] = orientation
+
+    settings.metadata[kCGImagePropertyExifDictionary as String] = exifDict
+
     return settings
+  }
+
+  private func exifOrientation(for deviceOrientation: UIDeviceOrientation) -> Int {
+    // EXIF orientation values based on CIPA DC-008-2012
+    switch deviceOrientation {
+    case .portrait:
+      return 6  // Right top
+    case .portraitUpsideDown:
+      return 8  // Left bottom
+    case .landscapeLeft:
+      return 1  // Top left (normal)
+    case .landscapeRight:
+      return 3  // Bottom right
+    default:
+      return 6  // Default to portrait
+    }
+  }
+
+  private func photoRotationAngle(for deviceOrientation: UIDeviceOrientation) -> CGFloat {
+    switch deviceOrientation {
+    case .portrait:
+      return 90
+    case .portraitUpsideDown:
+      return 270
+    case .landscapeLeft:
+      return 0
+    case .landscapeRight:
+      return 180
+    default:
+      return 90
+    }
   }
 
   /// ユーザー操作で写真撮影を行う（同期イベントも送信）
@@ -632,9 +687,23 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
       guard let data = photo.fileDataRepresentation() else {
         return
       }
+
+      // Save with proper orientation metadata
       PHPhotoLibrary.shared().performChanges {
         let request = PHAssetCreationRequest.forAsset()
         request.addResource(with: .photo, data: data, options: nil)
+
+        // Set location and date if available
+        request.creationDate = Date()
+      } completionHandler: { [weak self] success, error in
+        if let error = error {
+          self?.logger.error("Failed to save photo: \(error.localizedDescription)")
+          DispatchQueue.main.async {
+            self?.error = error
+          }
+        } else if success {
+          self?.logger.info("Photo saved successfully")
+        }
       }
     }
   }
