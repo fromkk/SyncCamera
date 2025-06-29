@@ -212,7 +212,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     let maxDuration = device.activeFormat.maxExposureDuration
 
     let availableSeconds: [Double] = [
-      1.0, 1.0 / 2.0, 1.0 / 4.0, 1.0 / 8.0, 1.0 / 15.0, 1.0 / 30.0, 1.0 / 60.0,
+      1.0 / 2.0, 1.0 / 4.0, 1.0 / 8.0, 1.0 / 15.0, 1.0 / 30.0, 1.0 / 60.0,
       1.0 / 100.0, 1.0 / 200.0, 1.0 / 400.0, 1.0 / 800.0, 1.0 / 1600.0,
       1.0 / 3200.0, 1.0 / 6400.0, 1.0 / 12800.0, 1.0 / 25600.0,
     ]
@@ -653,6 +653,7 @@ struct CameraView: View {
             }
           }
         }
+        .ignoresSafeArea(edges: [.top, .horizontal])
       }
 
       // リアルタイム情報表示
@@ -803,7 +804,7 @@ struct CameraView: View {
                     )
                 }
               }
-              .padding(.horizontal)
+              .padding([.horizontal, .top])
             }
             .tint(.white)
             .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -989,7 +990,6 @@ struct CameraView: View {
       .animation(.default, value: store.isConfigurationsVisible)
     }
     .background(Color.black)
-    .ignoresSafeArea(edges: [.top, .horizontal])
     .gesture(
       DragGesture().onEnded { value in
         if value.translation.height < -50 {
