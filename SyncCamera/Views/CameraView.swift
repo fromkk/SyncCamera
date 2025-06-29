@@ -582,9 +582,28 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     guard isCameraAvailable else { return }
     queue.async { [weak self] in
       guard let self else { return }
-      let settings = AVCapturePhotoSettings()
+      let settings = self.capturePhotoSettings()
       self.photoOutput.capturePhoto(with: settings, delegate: self)
     }
+  }
+  
+  enum PhotoFormat {
+    case jpeg
+    case heic
+  }
+  
+  var photoFormat: PhotoFormat = .jpeg
+  
+  private func capturePhotoSettings() -> AVCapturePhotoSettings {
+    let settings = AVCapturePhotoSettings(
+      format: [AVVideoCodecKey: photoFormat == .jpeg ? AVVideoCodecType.jpeg : AVVideoCodecType.hevc]
+    )
+    
+    var meta: [String: Any] = [:]
+    meta[kCGImagePropertyTIFFSoftware as String] = Bundle.main.infoDictionary?["CFBundleDisplayName"] as? String ?? "SyncCamera"
+    settings.metadata["{TIFF}"] = meta
+
+    return settings
   }
 
   /// ユーザー操作で写真撮影を行う（同期イベントも送信）
