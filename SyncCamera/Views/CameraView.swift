@@ -520,7 +520,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
   /// 背面カメラのデバイス探索セッション
   let backVideoDeviceDiscoverySession = AVCaptureDevice.DiscoverySession(
     deviceTypes: [
-      .builtInWideAngleCamera, .builtInUltraWideCamera, .builtInTelephotoCamera,
+      .builtInTripleCamera, .builtInWideAngleCamera, .builtInUltraWideCamera, .builtInTelephotoCamera,
     ],
     mediaType: .video,
     position: .back
