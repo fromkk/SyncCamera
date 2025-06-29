@@ -78,10 +78,20 @@ struct SlideDialView<Value: Hashable & CustomStringConvertible>: View {
 
     var body: some View {
       VStack {
-        SlideDialView(
-          allValues: isoValues,
+        DialView(
+          allValue: isoValues,
           selection: $selectedValue
-        )
+        ) { value in
+          VStack(spacing: 8) {
+            Rectangle()
+              .fill(selectedValue == value ? Color.yellow : Color.white)
+              .frame(width: 2, height: 20)
+            Text(value.description)
+              .font(.caption2)
+              .foregroundColor(selectedValue == value ? .yellow : .white)
+          }
+          .frame(width: 48)
+        }
 
         Text("親ビューで選択中の値: \(selectedValue?.description ?? "nil")")
           .foregroundColor(.white)

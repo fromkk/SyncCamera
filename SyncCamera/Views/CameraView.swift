@@ -812,8 +812,8 @@ struct CameraView: View {
           if let configurationMode = store.configurationMode {
             switch configurationMode {
             case .iso:
-              SlideDialView(
-                allValues: store.isoValues,
+              DialView(
+                allValue: store.isoValues,
                 selection: Binding(
                   get: {
                     store.currentISO
@@ -824,10 +824,20 @@ struct CameraView: View {
                     store.updateISO(iso)
                   }
                 )
-              )
+              ) { value in
+                VStack(spacing: 8) {
+                  Rectangle()
+                    .fill(store.currentISO == value ? Color.yellow : Color.white)
+                    .frame(width: 2, height: 20)
+                  Text(value.description)
+                    .font(.caption2)
+                    .foregroundColor(store.currentISO == value ? .yellow : .white)
+                }
+                .frame(width: 48)
+              }
             case .shutterSpeed:
-              SlideDialView(
-                allValues: store.shutterSpeedValues,
+              DialView(
+                allValue: store.shutterSpeedValues,
                 selection: Binding(
                   get: {
                     store.currentShutterSpeed
@@ -838,7 +848,19 @@ struct CameraView: View {
                     store.updateShutterSpeed(ss)
                   }
                 )
-              )
+              ) { value in
+                VStack(spacing: 8) {
+                  Rectangle()
+                    .fill(store.currentShutterSpeed == value ? Color.yellow : Color.white)
+                    .frame(width: 2, height: 20)
+                  Text(value.description)
+                    .font(.caption2)
+                    .foregroundColor(
+                      store.currentShutterSpeed == value ? .yellow : .white
+                    )
+                }
+                .frame(width: 48)
+              }
             case .focus:
               HStack(spacing: 16) {
                 Button {
