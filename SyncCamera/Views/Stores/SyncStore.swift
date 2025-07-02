@@ -7,6 +7,7 @@ import UIKit
 
 protocol SyncDelegate: AnyObject {
   func receivedEvent(_ event: SyncStore.Event)
+  func receivedResource(_ url: URL)
 }
 
 @Observable
@@ -33,6 +34,8 @@ final class SyncStore: NSObject, MCSessionDelegate, MCBrowserViewControllerDeleg
   var mcBrowser: MCBrowserViewController
   private(set) var error: (any Error)?
   var receivedEvent: Event?
+
+  var isSyncing: Bool = false
 
   /// 保留中の招待情報を保持するプロパティ
   var pendingInvitation: (peerID: MCPeerID, handler: (Bool, MCSession?) -> Void)?
@@ -103,8 +106,42 @@ final class SyncStore: NSObject, MCSessionDelegate, MCBrowserViewControllerDeleg
         with: .reliable
       )
     } catch {
+      logger.error("\(#function) error \(error)")
       self.error = error
     }
+  }
+
+  func sendData(_ data: Data) {
+    logger.info("\(#function) \(data)")
+    guard let peerID = mcSession.connectedPeers.first else {
+      return
+    }
+    do {
+      try mcSession.send(data, toPeers: mcSession.connectedPeers, with: .reliable)
+    } catch {
+      logger.error("\(#function) error \(error)")
+      self.error = error
+    }
+  }
+
+  func sendResource(_ url: URL) {
+    logger.info("\(#function) url \(url)")
+    guard let peerID = mcSession.connectedPeers.first else {
+      return
+    }
+
+    isSyncing = true
+    mcSession.sendResource(at: url, withName: url.lastPathComponent, toPeer: peerID) {
+      [weak self] error in
+      guard let self else { return }
+      self.isSyncing = false
+      do {
+        try FileManager.default.removeItem(at: url)
+      } catch {
+        self.error = error
+      }
+    }
+    isSyncing = true
   }
 
   /// 招待を承諾する
@@ -177,6 +214,7 @@ final class SyncStore: NSObject, MCSessionDelegate, MCBrowserViewControllerDeleg
     with progress: Progress
   ) {
     logger.info("Started receiving resource '\(resourceName)' from '\(peerID.displayName)'")
+    isSyncing = !progress.isFinished
   }
 
   func session(
@@ -186,14 +224,16 @@ final class SyncStore: NSObject, MCSessionDelegate, MCBrowserViewControllerDeleg
     at localURL: URL?,
     withError error: (any Error)?
   ) {
+    isSyncing = false
     if let error {
       logger.error(
         "Failed receiving resource '\(resourceName)' from '\(peerID.displayName)': \(error.localizedDescription)"
       )
-    } else {
+    } else if let localURL {
       logger.info(
-        "Finished receiving resource '\(resourceName)' from '\(peerID.displayName)' at \(localURL?.absoluteString ?? "nil")"
+        "Finished receiving resource '\(resourceName)' from '\(peerID.displayName)' at \(localURL.absoluteString)"
       )
+      delegate?.receivedResource(localURL)
     }
   }
 

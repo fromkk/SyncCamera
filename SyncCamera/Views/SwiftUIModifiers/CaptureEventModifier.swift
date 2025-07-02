@@ -4,9 +4,9 @@ import UIKit
 
 private struct iOS17CaptureView: UIViewRepresentable {
   let capture: () -> Void
-  
+
   typealias UIViewType = UIView
-  
+
   func makeUIView(context: Context) -> UIViewType {
     let view = UIView()
     view.backgroundColor = .clear
@@ -21,7 +21,7 @@ private struct iOS17CaptureView: UIViewRepresentable {
     }
     return view
   }
-  
+
   func updateUIView(_ uiView: UIViewType, context: Context) {
     // nop
   }
@@ -29,7 +29,7 @@ private struct iOS17CaptureView: UIViewRepresentable {
 
 struct CaptureEventModifier: ViewModifier {
   let capture: () -> Void
-  
+
   func body(content: Content) -> some View {
     if #available(iOS 18.0, *) {
       content

@@ -49,6 +49,9 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
 
   var currentOrientation: UIDeviceOrientation?
 
+  /// 同期済みの端末によって写真を撮影した場合は `true`
+  var capturePhotoFromSync: Bool = false
+
   /// キャプチャモード（写真/動画）の定義
   enum CaptureMode {
     case photo
@@ -214,7 +217,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
 
     /// 一般的なシャッタースピード（1/秒 形式の分母のリスト）
     let availableSeconds: [Double] = [
-      2, 4, 8, 15, 30, 60, 125, 250, 500, 1000, 2000, 4000, 8000
+      2, 4, 8, 15, 30, 60, 125, 250, 500, 1000, 2000, 4000, 8000,
     ]
 
     let result = availableSeconds.filter {
@@ -520,7 +523,8 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
   /// 背面カメラのデバイス探索セッション
   let backVideoDeviceDiscoverySession = AVCaptureDevice.DiscoverySession(
     deviceTypes: [
-      .builtInTripleCamera, .builtInWideAngleCamera, .builtInUltraWideCamera, .builtInTelephotoCamera,
+      .builtInWideAngleCamera, .builtInUltraWideCamera,
+      .builtInTelephotoCamera,
     ],
     mediaType: .video,
     position: .back
@@ -607,13 +611,15 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
   private func capturePhotoSettings() -> AVCapturePhotoSettings {
     let settings = AVCapturePhotoSettings(
       format: [
-        AVVideoCodecKey: photoFormat == .jpeg ? AVVideoCodecType.jpeg : AVVideoCodecType.hevc
+        AVVideoCodecKey: photoFormat == .jpeg
+          ? AVVideoCodecType.jpeg : AVVideoCodecType.hevc
       ]
     )
 
     var meta: [String: Any] = [:]
     meta[kCGImagePropertyTIFFSoftware as String] =
-      Bundle.main.infoDictionary?["CFBundleDisplayName"] as? String ?? "SyncCamera"
+      Bundle.main.infoDictionary?["CFBundleDisplayName"] as? String
+      ?? "SyncCamera"
     settings.metadata["{TIFF}"] = meta
 
     // Add EXIF orientation metadata
@@ -629,7 +635,9 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     return settings
   }
 
-  private func exifOrientation(for deviceOrientation: UIDeviceOrientation) -> Int {
+  private func exifOrientation(for deviceOrientation: UIDeviceOrientation)
+    -> Int
+  {
     // EXIF orientation values based on CIPA DC-008-2012
     switch deviceOrientation {
     case .portrait:
@@ -645,7 +653,9 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     }
   }
 
-  private func photoRotationAngle(for deviceOrientation: UIDeviceOrientation) -> CGFloat {
+  private func photoRotationAngle(for deviceOrientation: UIDeviceOrientation)
+    -> CGFloat
+  {
     switch deviceOrientation {
     case .portrait:
       return 90
@@ -664,6 +674,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
   func takePhotoFromUser() {
     logger.info("\(#function)")
     guard isCameraAvailable else { return }
+    capturePhotoFromSync = false
     syncStore.sendEvent(.takePhoto)
     takePhoto()
   }
@@ -687,6 +698,8 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
         return
       }
 
+      sendResourceIfNeeded(data)
+
       // Save with proper orientation metadata
       PHPhotoLibrary.shared().performChanges {
         let request = PHAssetCreationRequest.forAsset()
@@ -696,7 +709,9 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
         request.creationDate = Date()
       } completionHandler: { [weak self] success, error in
         if let error = error {
-          self?.logger.error("Failed to save photo: \(error.localizedDescription)")
+          self?.logger.error(
+            "Failed to save photo: \(error.localizedDescription)"
+          )
           DispatchQueue.main.async {
             self?.error = error
           }
@@ -707,13 +722,39 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     }
   }
 
+  /// 自分で撮影し、同期相手がいる場合は写真を送信する
+  private func sendResourceIfNeeded(_ data: Data) {
+    if !capturePhotoFromSync, !syncStore.mcSession.connectedPeers.isEmpty {
+      let url = FileManager.default.temporaryDirectory.appending(
+        path: "\(Date().timeIntervalSince1970).jpg"
+      )
+      do {
+        try data.write(to: url)
+        syncStore.sendResource(url)
+        photoData = data
+      } catch {
+        logger.error("\(error)")
+        self.error = error
+      }
+    }
+  }
+
   // MARK: - SyncDelegate
 
   /// 同期イベント受信時の処理（例：写真撮影イベント）
   func receivedEvent(_ event: SyncStore.Event) {
     switch event {
     case .takePhoto:
+      capturePhotoFromSync = true
       takePhoto()
+    }
+  }
+
+  /// 同期相手が送信した写真を受信
+  func receivedResource(_ url: URL) {
+    logger.info("\(#function) url \(url)")
+    if let photoData, let receivedData = try? Data(contentsOf: url) {
+      logger.info("photoData \(photoData) receivedData \(receivedData)")
     }
   }
 }
@@ -915,11 +956,15 @@ struct CameraView: View {
               ) { value in
                 VStack(spacing: 8) {
                   Rectangle()
-                    .fill(store.currentISO == value ? Color.yellow : Color.white)
+                    .fill(
+                      store.currentISO == value ? Color.yellow : Color.white
+                    )
                     .frame(width: 2, height: 10)
                   Text(value.description)
                     .font(.caption2)
-                    .foregroundColor(store.currentISO == value ? .yellow : .white)
+                    .foregroundColor(
+                      store.currentISO == value ? .yellow : .white
+                    )
                 }
                 .frame(width: 90)
               }
@@ -939,7 +984,10 @@ struct CameraView: View {
               ) { value in
                 VStack(spacing: 8) {
                   Rectangle()
-                    .fill(store.currentShutterSpeed == value ? Color.yellow : Color.white)
+                    .fill(
+                      store.currentShutterSpeed == value
+                        ? Color.yellow : Color.white
+                    )
                     .frame(width: 2, height: 10)
                   Text(value.description)
                     .font(.caption2)
@@ -1073,23 +1121,27 @@ struct CameraView: View {
               Spacer()
 
               // Sync button on the right
-              Button {
-                store.isSyncViewPresented.toggle()
-              } label: {
-                HStack {
-                  Image(systemName: "arrow.triangle.2.circlepath.camera")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 44, height: 44)
-                  if store.syncStore.mcSession.connectedPeers.count > 0 {
-                    Text("\(store.syncStore.mcSession.connectedPeers.count)")
-                      .font(.footnote)
-                      .padding(4)
+              if store.syncStore.isSyncing {
+                ProgressView()
+              } else {
+                Button {
+                  store.isSyncViewPresented.toggle()
+                } label: {
+                  HStack {
+                    Image(systemName: "arrow.triangle.2.circlepath.camera")
+                      .resizable()
+                      .aspectRatio(contentMode: .fit)
+                      .frame(width: 44, height: 44)
+                    if store.syncStore.mcSession.connectedPeers.count > 0 {
+                      Text("\(store.syncStore.mcSession.connectedPeers.count)")
+                        .font(.footnote)
+                        .padding(4)
+                    }
                   }
                 }
+                .tint(Color.white)
+                .frame(width: 80, height: 80)
               }
-              .tint(Color.white)
-              .frame(width: 80, height: 80)
             }
             .padding()
           }
@@ -1264,4 +1316,3 @@ struct CameraView: View {
 #Preview {
   CameraView(store: CameraStore())
 }
-
