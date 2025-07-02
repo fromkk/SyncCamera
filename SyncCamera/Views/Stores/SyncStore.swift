@@ -50,10 +50,12 @@ final class SyncStore: NSObject, MCSessionDelegate, MCBrowserViewControllerDeleg
       session: mcSession
     )
 
-    mcBrowser = MCBrowserViewController(
+    let mcBrowser = MCBrowserViewController(
       serviceType: serviceType,
       session: mcSession
     )
+    mcBrowser.maximumNumberOfPeers = 1
+    self.mcBrowser = mcBrowser
 
     self.mcSession = mcSession
 
