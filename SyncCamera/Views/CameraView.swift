@@ -52,6 +52,9 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
   /// 同期済みの端末によって写真を撮影した場合は `true`
   var capturePhotoFromSync: Bool = false
 
+  /// 空間写真を生成する
+  var spatialPhotoStore: SpatialPhotoStore?
+
   /// キャプチャモード（写真/動画）の定義
   enum CaptureMode {
     case photo
@@ -384,6 +387,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
 
   private func subscribeDeviceValues() {
     timer?.invalidate()
+    timer = nil
     timer = Timer.scheduledTimer(
       withTimeInterval: 1.0 / 30.0,
       repeats: true,
@@ -552,9 +556,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
         return
       }
       self.session.startRunning()
-      if !(self.timer?.isValid ?? false) {
-        self.subscribeDeviceValues()
-      }
+      self.subscribeDeviceValues()
       deviceOrientationTask?.cancel()
       subscribeDeviceOrientation()
     }
@@ -576,6 +578,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
       self.session.stopRunning()
       if self.timer?.isValid ?? false {
         self.timer?.invalidate()
+        self.timer = nil
       }
       deviceOrientationTask?.cancel()
     }
@@ -624,12 +627,8 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
 
     // Add EXIF orientation metadata
     var exifDict: [String: Any] = [:]
-    exifDict[kCGImagePropertyExifPixelXDimension as String] = 4000
-    exifDict[kCGImagePropertyExifPixelYDimension as String] = 3000
-
     let orientation = exifOrientation(for: currentOrientation ?? .portrait)
     exifDict[kCGImagePropertyOrientation as String] = orientation
-
     settings.metadata[kCGImagePropertyExifDictionary as String] = exifDict
 
     return settings
@@ -754,7 +753,11 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
   func receivedResource(_ url: URL) {
     logger.info("\(#function) url \(url)")
     if let photoData, let receivedData = try? Data(contentsOf: url) {
-      logger.info("photoData \(photoData) receivedData \(receivedData)")
+      spatialPhotoStore = SpatialPhotoStore(
+        leftImageData: photoData,
+        rightImageData: receivedData
+      )
+      self.photoData = nil
     }
   }
 }
@@ -1193,6 +1196,12 @@ struct CameraView: View {
         }
       )
     }
+    .sheet(
+      item: $store.spatialPhotoStore,
+      content: { spatialPhotoStore in
+        SpatialPhotoView(store: spatialPhotoStore)
+      }
+    )
     .sheet(isPresented: $store.isSyncViewPresented) {
       MultipeerBrowserView(store: store.syncStore)
     }
