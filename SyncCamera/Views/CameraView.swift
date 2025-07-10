@@ -788,8 +788,8 @@ struct CameraView: View {
       }
 
       // リアルタイム情報表示
-      VStack {
-        HStack(spacing: 20) {
+      VHStack {
+        HVStack(spacing: 20) {
           Text("ISO: \(Int(store.realTimeISO))")
             .font(.system(size: 14, weight: .medium, design: .monospaced))
             .foregroundColor(.white)
@@ -819,19 +819,28 @@ struct CameraView: View {
         Spacer()
       }
 
-      VStack(spacing: 16) {
+      VHStack(spacing: 16) {
         Spacer()
-        Button {
-          store.isConfigurationsVisible.toggle()
-        } label: {
-          Capsule()
-            .frame(width: 100, height: 6)
-            .padding(.vertical, 8)
-        }
-        .tint(.white.opacity(0.5))
-        .contentShape(.rect)
 
         VStack(spacing: 16) {
+          Spacer()
+
+          HStack {
+            Spacer()
+
+            Button {
+              store.isConfigurationsVisible.toggle()
+            } label: {
+              Capsule()
+                .frame(width: 100, height: 6)
+                .padding(.vertical, 8)
+            }
+            .tint(.white.opacity(0.5))
+            .contentShape(.rect)
+
+            Spacer()
+          }
+
           if store.isConfigurationsVisible {
             ScrollView(.horizontal, showsIndicators: false) {
               HStack(spacing: 32) {
@@ -1102,54 +1111,53 @@ struct CameraView: View {
               }
               .padding(.horizontal)
             }
-          } else {
-            HStack {
-              // Left placeholder to balance the sync button
-              Spacer()
-                .frame(width: 80)
-
-              Spacer()
-
-              // Shutter button in the middle
-              Button {
-                store.takePhotoFromUser()
-              } label: {
-                Circle()
-                  .frame(width: 80, height: 80)
-              }
-              .accessibilityLabel(Text("シャッター"))
-              .tint(.white)
-              .padding(.bottom, 16)
-
-              Spacer()
-
-              // Sync button on the right
-              if store.syncStore.isSyncing {
-                ProgressView()
-              } else {
-                Button {
-                  store.isSyncViewPresented.toggle()
-                } label: {
-                  HStack {
-                    Image(systemName: "arrow.triangle.2.circlepath.camera")
-                      .resizable()
-                      .aspectRatio(contentMode: .fit)
-                      .frame(width: 44, height: 44)
-                    if store.syncStore.mcSession.connectedPeers.count > 0 {
-                      Text("\(store.syncStore.mcSession.connectedPeers.count)")
-                        .font(.footnote)
-                        .padding(4)
-                    }
-                  }
-                }
-                .tint(Color.white)
-                .frame(width: 80, height: 80)
-              }
-            }
-            .padding()
           }
         }
-        .background(Color.black)
+
+        HVStack {
+          // Left placeholder to balance the sync button
+          Spacer()
+            .frame(width: 80, height: 80)
+
+          Spacer()
+
+          // Shutter button in the middle
+          Button {
+            store.takePhotoFromUser()
+          } label: {
+            Circle()
+              .frame(width: 80, height: 80)
+          }
+          .accessibilityLabel(Text("シャッター"))
+          .tint(.white)
+          .padding(.bottom, 16)
+
+          Spacer()
+
+          // Sync button on the right
+          if store.syncStore.isSyncing {
+            ProgressView()
+          } else {
+            Button {
+              store.isSyncViewPresented.toggle()
+            } label: {
+              HStack {
+                Image(systemName: "arrow.triangle.2.circlepath.camera")
+                  .resizable()
+                  .aspectRatio(contentMode: .fit)
+                  .frame(width: 44, height: 44)
+                if store.syncStore.mcSession.connectedPeers.count > 0 {
+                  Text("\(store.syncStore.mcSession.connectedPeers.count)")
+                    .font(.footnote)
+                    .padding(4)
+                }
+              }
+            }
+            .tint(Color.white)
+            .frame(width: 80, height: 80)
+          }
+        }
+        .padding()
       }
       .animation(.default, value: store.isConfigurationsVisible)
     }
@@ -1224,6 +1232,38 @@ struct CameraView: View {
     }
     .captureEvent {
       store.takePhotoFromUser()
+    }
+  }
+
+  @ViewBuilder
+  func VHStack<Content: View>(
+    spacing: CGFloat = 0,
+    @ViewBuilder content: @escaping () -> Content
+  ) -> some View {
+    if store.currentOrientation?.isPortrait ?? true {
+      VStack(spacing: spacing) {
+        content()
+      }
+    } else {
+      HStack(spacing: spacing) {
+        content()
+      }
+    }
+  }
+
+  @ViewBuilder
+  func HVStack<Content: View>(
+    spacing: CGFloat = 0,
+    @ViewBuilder content: @escaping () -> Content
+  ) -> some View {
+    if store.currentOrientation?.isPortrait ?? true {
+      HStack(spacing: spacing) {
+        content()
+      }
+    } else {
+      VStack(spacing: spacing) {
+        content()
+      }
     }
   }
 
