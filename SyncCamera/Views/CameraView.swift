@@ -550,13 +550,15 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
       syncStore.startAdvertising()
     }
 
+    subscribeDeviceValues()
+
     queue.async { [weak self] in
       guard let self, !self.session.isRunning else {
         self?.logger.info("already running")
         return
       }
       self.session.startRunning()
-      self.subscribeDeviceValues()
+
       deviceOrientationTask?.cancel()
       subscribeDeviceOrientation()
     }
@@ -570,16 +572,18 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
       syncStore.stopAdvertising()
     }
 
+    if self.timer?.isValid ?? false {
+      self.timer?.invalidate()
+      self.timer = nil
+    }
+
     queue.async { [weak self] in
       guard let self, self.session.isRunning else {
         self?.logger.info("already stopping")
         return
       }
       self.session.stopRunning()
-      if self.timer?.isValid ?? false {
-        self.timer?.invalidate()
-        self.timer = nil
-      }
+
       deviceOrientationTask?.cancel()
     }
   }
@@ -1076,7 +1080,8 @@ struct CameraView: View {
                   .padding(8)
                   .frame(minWidth: 80)
                   .background(
-                    store.currentFocus == .auto ? Color.accentColor : Color.clear
+                    store.currentFocus == .auto
+                      ? Color.accentColor : Color.clear
                   )
                   .foregroundColor(
                     store.currentFocus == .auto ? .white : .white.opacity(0.7)
