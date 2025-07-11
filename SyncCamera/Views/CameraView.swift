@@ -607,6 +607,15 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
   enum PhotoFormat {
     case jpeg
     case heic
+
+    var ext: String {
+      switch self {
+      case .jpeg:
+        return "jpg"
+      case .heic:
+        return "heic"
+      }
+    }
   }
 
   var photoFormat: PhotoFormat = .jpeg
@@ -698,6 +707,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
       }
 
       sendResourceIfNeeded(data)
+      createThumbnail(data)
 
       // Save with proper orientation metadata
       PHPhotoLibrary.shared().performChanges {
@@ -721,11 +731,39 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     }
   }
 
+  var thumbnailURL: URL?
+  private func createThumbnail(_ data: Data) {
+    let fileManager = FileManager.default
+    // サムネイル画像（128x128）を作成して一時ファイルに保存
+    if let thumbnail = makeThumbnail(
+      from: data,
+      size: CGSize(width: 128, height: 128)
+    ) {
+      let thumbnailURL = fileManager.temporaryDirectory.appending(
+        path: "thumb_\(Date().timeIntervalSince1970).jpg"
+      )
+      do {
+        if let oldThumbnailURL = self.thumbnailURL,
+          fileManager.fileExists(atPath: oldThumbnailURL.path())
+        {
+          try? fileManager.removeItem(at: oldThumbnailURL)
+        }
+
+        try thumbnail.write(to: thumbnailURL)
+        // 必要に応じてサムネイルも送信や保存処理に使える
+        logger.info("Thumbnail image saved at \(thumbnailURL)")
+        self.thumbnailURL = thumbnailURL
+      } catch {
+        logger.error("Failed to save thumbnail: \(error.localizedDescription)")
+      }
+    }
+  }
+
   /// 自分で撮影し、同期相手がいる場合は写真を送信する
   private func sendResourceIfNeeded(_ data: Data) {
     if !capturePhotoFromSync, !syncStore.mcSession.connectedPeers.isEmpty {
       let url = FileManager.default.temporaryDirectory.appending(
-        path: "\(Date().timeIntervalSince1970).jpg"
+        path: "\(Date().timeIntervalSince1970).\(photoFormat.ext)"
       )
       do {
         try data.write(to: url)
@@ -736,6 +774,16 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
         self.error = error
       }
     }
+  }
+
+  /// 画像データから指定サイズのサムネイルJPEGデータを生成
+  private func makeThumbnail(from data: Data, size: CGSize) -> Data? {
+    guard let image = UIImage(data: data) else { return nil }
+    let renderer = UIGraphicsImageRenderer(size: size)
+    let resized = renderer.image { _ in
+      image.draw(in: CGRect(origin: .zero, size: size))
+    }
+    return resized.jpegData(compressionQuality: 0.8)
   }
 
   // MARK: - SyncDelegate
@@ -768,6 +816,8 @@ struct CameraView: View {
   @Bindable var store: CameraStore
   /// 現在のシーンのフェーズ（アクティブ/非アクティブ等）
   @Environment(\.scenePhase) var scenePhase
+
+  @Environment(\.openURL) var openURL
 
   /// ビューの本体。カメラプレビューやボタンなどのUIを構築
   var body: some View {
@@ -1116,8 +1166,30 @@ struct CameraView: View {
 
         HVStack {
           // Left placeholder to balance the sync button
-          Spacer()
-            .frame(width: 80, height: 80)
+          Button {
+            let url = URL(string: "photos-redirect://")!
+            openURL(url)
+          } label: {
+            AsyncImage(
+              url: store.thumbnailURL,
+              transaction: .init(animation: .default)
+            ) { content in
+              switch content {
+              case .success(let image):
+                image
+                  .resizable()
+                  .aspectRatio(contentMode: .fill)
+                  .frame(width: 40, height: 40)
+                  .clipShape(RoundedRectangle(cornerRadius: 8))
+                  .padding(20)
+                  .transition(.scale(scale: 1.2))
+              default:
+                Rectangle()
+                  .fill(Color.clear)
+                  .frame(width: 80, height: 80)
+              }
+            }
+          }
 
           Spacer()
 
