@@ -18,6 +18,10 @@ final class SpatialPhotoStore: Identifiable {
   var error: (any Error)?
   var isSaveSuccessAlertPresented: Bool = false
 
+  var baselineInMillimeters: String = "10"
+  var horizontalFOV: String = "40"
+  var disparityAdjustment: String = "0"
+
   init?(leftImageData: Data, rightImageData: Data) {
     guard
       let leftImage = Self.createCGImage(from: leftImageData),
@@ -92,9 +96,9 @@ final class SpatialPhotoStore: Identifiable {
       leftImageURL: leftImageURL,
       rightImageURL: rightImageURL,
       outputImageURL: outputImageURL,
-      baselineInMillimeters: 1,
-      horizontalFOV: 42,
-      disparityAdjustment: 0
+      baselineInMillimeters: Double(baselineInMillimeters) ?? 10,
+      horizontalFOV: Double(horizontalFOV) ?? 40,
+      disparityAdjustment: Double(disparityAdjustment) ?? 0
     )
     try converter.convert()
 
@@ -146,9 +150,29 @@ struct SpatialPhotoView: View {
         .background(Color.accentColor.opacity(0.1))
         .aspectRatio(1, contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: 16))
-
       }
       .padding(16)
+
+      HStack {
+        Text("レンズ間隔")
+          .frame(width: 120)
+        TextField("0", text: $store.baselineInMillimeters)
+          .multilineTextAlignment(.trailing)
+      }
+
+      HStack {
+        Text("水平視野角")
+          .frame(width: 120)
+        TextField("0", text: $store.horizontalFOV)
+          .multilineTextAlignment(.trailing)
+      }
+
+      HStack {
+        Text("視差のオフセット")
+          .frame(width: 120)
+        TextField("0", text: $store.disparityAdjustment)
+          .multilineTextAlignment(.trailing)
+      }
 
       Button {
         store.generateSpatialPhoto()
@@ -160,6 +184,7 @@ struct SpatialPhotoView: View {
           .clipShape(RoundedRectangle(cornerRadius: 8))
       }
     }
+    .padding()
     .alert(
       "エラー",
       isPresented: Binding(
@@ -184,4 +209,13 @@ struct SpatialPhotoView: View {
       Text("空間写真の保存が完了しました")
     }
   }
+}
+
+#Preview {
+  SpatialPhotoView(
+    store: .init(
+      leftImageData: UIImage(systemName: "square.and.arrow.up")!.pngData()!,
+      rightImageData: UIImage(systemName: "square.and.arrow.up")!.pngData()!
+    )!
+  )
 }
