@@ -1203,9 +1203,11 @@ struct CameraView: View {
             }
           }
 
-          ExternalStorageIcon(store: store.externaoStorage)
-            .font(.system(size: 24))
-            .tint(Color.white)
+          if AVExternalStorageDeviceDiscoverySession.isSupported {
+            ExternalStorageIcon(store: store.externaoStorage)
+              .font(.system(size: 24))
+              .tint(Color.white)
+          }
 
           Spacer()
 
@@ -1222,8 +1224,10 @@ struct CameraView: View {
 
           Spacer()
 
-          Color.clear
-            .frame(width: 20, height: 20)
+          if AVExternalStorageDeviceDiscoverySession.isSupported {
+            Color.clear
+              .frame(width: 20, height: 20)
+          }
 
           // Sync button on the right
           if store.syncStore.isSyncing {

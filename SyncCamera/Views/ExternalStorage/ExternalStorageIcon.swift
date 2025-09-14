@@ -1,27 +1,21 @@
+import AVKit
 import Combine
-import ImageCaptureCore
 import SwiftUI
 
 @Observable
 final class ExternalStorageIconStore: Identifiable {
   let id = UUID()
-  let deviceBrowwser: ICDeviceBrowser = ICDeviceBrowser()
 
   var isAuthorized: Bool = false
-  var selectedDevice: ICCameraDevice?
+  var selectedDevice: AVExternalStorageDevice?
   var deviceListStore: ExternalStorageDevicesStore?
 
   func task() async {
-    switch deviceBrowwser.contentsAuthorizationStatus {
+    switch AVExternalStorageDevice.authorizationStatus {
     case .authorized:
       isAuthorized = true
     case .notDetermined:
-      let status = await withCheckedContinuation { continuation in
-        deviceBrowwser.requestContentsAuthorization { status in
-          continuation.resume(returning: status)
-        }
-      }
-      isAuthorized = status == .authorized
+      isAuthorized = await AVExternalStorageDevice.requestAccess()
     case .denied, .restricted:
       isAuthorized = false
     default:
@@ -31,7 +25,6 @@ final class ExternalStorageIconStore: Identifiable {
 
   func showDeviceList() {
     let deviceListStore = ExternalStorageDevicesStore(
-      deviceBrowser: deviceBrowwser,
       selectedDevice: selectedDevice
     )
     trackSelectedDevice(deviceListStore)
@@ -67,7 +60,7 @@ struct ExternalStorageIcon: View {
           store.showDeviceList()
         } label: {
           if let device = store.selectedDevice {
-            Text("\(device.name ?? "Unknown")")
+            Text("\(device.displayName ?? "Unknown")")
           } else {
             Label("Devices", systemImage: "list.bullet")
               .labelStyle(.iconOnly)
@@ -96,57 +89,32 @@ struct ExternalStorageIcon: View {
 }
 
 @Observable
-final class ExternalStorageDevicesStore: NSObject, Identifiable,
-  ICDeviceBrowserDelegate
-{
+final class ExternalStorageDevicesStore: NSObject, Identifiable {
   let id = UUID()
 
-  init(deviceBrowser: ICDeviceBrowser, selectedDevice: ICCameraDevice? = nil) {
-    self.deviceBrowser = deviceBrowser
+  init(selectedDevice: AVExternalStorageDevice? = nil) {
     super.init()
-    self.deviceBrowser.delegate = self
     self.selectedDevice = selectedDevice
   }
-
-  let deviceBrowser: ICDeviceBrowser
-  var devices: [ICCameraDevice] = []
-  var selectedDevice: ICCameraDevice?
+  var devices: [AVExternalStorageDevice] = []
+  var selectedDevice: AVExternalStorageDevice?
 
   private var cancellables: Set<AnyCancellable> = .init()
 
   func startSubscribe() {
-    deviceBrowser.start()
-
-    deviceBrowser.publisher(for: \.devices).sink { [weak self] in
-      self?.devices = $0?.compactMap { $0 as? ICCameraDevice } ?? []
+    self.devices =
+      AVExternalStorageDeviceDiscoverySession.shared?.externalStorageDevices
+      ?? []
+    AVExternalStorageDeviceDiscoverySession.shared?.publisher(
+      for: \.externalStorageDevices
+    ).sink { [weak self] devices in
+      self?.devices = devices
     }
     .store(in: &cancellables)
   }
 
   func stopSubscribe() {
-    deviceBrowser.stop()
     cancellables.removeAll()
-  }
-
-  func deviceBrowser(
-    _ browser: ICDeviceBrowser,
-    didAdd device: ICDevice,
-    moreComing: Bool
-  ) {
-    updateDevices()
-  }
-
-  func deviceBrowser(
-    _ browser: ICDeviceBrowser,
-    didRemove device: ICDevice,
-    moreGoing: Bool
-  ) {
-    updateDevices()
-  }
-
-  private func updateDevices() {
-    self.devices =
-      deviceBrowser.devices?.compactMap { $0 as? ICCameraDevice } ?? []
   }
 }
 
@@ -158,37 +126,30 @@ struct ExternalStorageDevicesView: View {
       if store.devices.isEmpty {
         Text("No Devices")
       } else {
-        List(store.devices, id: \.self) { device in
+        List(store.devices, id: \.uuid) { device in
           Button {
-            if store.selectedDevice == device {
+            if store.selectedDevice?.isEqual(device) ?? false {
               store.selectedDevice = nil
             } else {
               store.selectedDevice = device
             }
           } label: {
             HStack(spacing: 8) {
-              if store.selectedDevice == device {
+              if store.selectedDevice?.isEqual(device) ?? false {
                 Image(systemName: "checkmark")
               }
-              Text(device.name ?? "Unknown")
+
+              Text(device.displayName ?? "Unknown")
             }
           }
         }
       }
     }
     .onAppear {
-      subscribeDeviceList()
+      store.startSubscribe()
     }
     .onDisappear {
-      unsubscribeDeviceList()
+      store.stopSubscribe()
     }
-  }
-
-  private func subscribeDeviceList() {
-    store.startSubscribe()
-  }
-
-  private func unsubscribeDeviceList() {
-    store.stopSubscribe()
   }
 }
