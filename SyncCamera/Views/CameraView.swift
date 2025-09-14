@@ -716,25 +716,37 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
       sendResourceIfNeeded(data)
       createThumbnail(data)
 
-      // Save with proper orientation metadata
-      PHPhotoLibrary.shared().performChanges {
-        let request = PHAssetCreationRequest.forAsset()
-        request.addResource(with: .photo, data: data, options: nil)
+      if
+        let selectedDevice = externaoStorage.selectedDevice,
+        let url = try? selectedDevice.nextAvailableURLs(withPathExtensions: ["JPG"]).first,
+        url.startAccessingSecurityScopedResource()
+      {
+        defer {
+          url.stopAccessingSecurityScopedResource()
+        }
+        try? data.write(to: url)
+      } else {
+        // Save with proper orientation metadata
+        PHPhotoLibrary.shared().performChanges {
+          let request = PHAssetCreationRequest.forAsset()
+          request.addResource(with: .photo, data: data, options: nil)
 
-        // Set location and date if available
-        request.creationDate = Date()
-      } completionHandler: { [weak self] success, error in
-        if let error = error {
-          self?.logger.error(
-            "Failed to save photo: \(error.localizedDescription)"
-          )
-          DispatchQueue.main.async {
-            self?.error = error
+          // Set location and date if available
+          request.creationDate = Date()
+        } completionHandler: { [weak self] success, error in
+          if let error = error {
+            self?.logger.error(
+              "Failed to save photo: \(error.localizedDescription)"
+            )
+            DispatchQueue.main.async {
+              self?.error = error
+            }
+          } else if success {
+            self?.logger.info("Photo saved successfully")
           }
-        } else if success {
-          self?.logger.info("Photo saved successfully")
         }
       }
+
     }
   }
 
