@@ -1,4 +1,5 @@
 import AVFoundation
+import ImageCaptureCore
 import ImageIO
 import OSLog
 import Observation
@@ -82,7 +83,9 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     case whiteBalance
   }
 
-  var externaoStorage: ExternalStorageIconStore = .init()
+  var saveExternalStorageStore: ExternalStorageIconStore = .init()
+  let deviceBrowser: ICDeviceBrowser = .init()
+  var previewExternalStorageStore: ExternalStoragePhotosStore?
 
   // MARK: - Focus
 
@@ -717,7 +720,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
       createThumbnail(data)
 
       if
-        let selectedDevice = externaoStorage.selectedDevice,
+        let selectedDevice = saveExternalStorageStore.selectedDevice,
         let url = try? selectedDevice.nextAvailableURLs(withPathExtensions: ["JPG"]).first,
         url.startAccessingSecurityScopedResource()
       {
@@ -1191,8 +1194,13 @@ struct CameraView: View {
         HVStack {
           // Left placeholder to balance the sync button
           Button {
-            let url = URL(string: "photos-redirect://")!
-            openURL(url)
+            if let device = store.saveExternalStorageStore.selectedDevice, let uuidString = device.uuid?.uuidString {
+              store.previewExternalStorageStore = nil
+              store.previewExternalStorageStore = .init(deviceBrowser: store.deviceBrowser, selectedUUID: uuidString)
+            } else {
+              let url = URL(string: "photos-redirect://")!
+              openURL(url)
+            }
           } label: {
             AsyncImage(
               url: store.thumbnailURL,
@@ -1216,7 +1224,7 @@ struct CameraView: View {
           }
 
           if AVExternalStorageDeviceDiscoverySession.isSupported {
-            ExternalStorageIcon(store: store.externaoStorage)
+            ExternalStorageIcon(store: store.saveExternalStorageStore)
           }
 
           Spacer()
@@ -1317,6 +1325,9 @@ struct CameraView: View {
     .sheet(isPresented: $store.isSyncViewPresented) {
       MultipeerBrowserView(store: store.syncStore)
     }
+    .sheet(item: $store.previewExternalStorageStore, content: { store in
+      ExternalStoragePhotosView(store: store)
+    })
     .alert(
       "\(store.syncStore.pendingInvitation?.peerID.displayName ?? "")からペアリングが届いています",
       isPresented: Binding(
