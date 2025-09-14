@@ -61,9 +61,11 @@ struct ExternalStorageIcon: View {
         } label: {
           if let device = store.selectedDevice {
             Text("\(device.displayName ?? "Unknown")")
+              .font(.system(size: 18))
           } else {
             Label("Devices", systemImage: "list.bullet")
               .labelStyle(.iconOnly)
+              .font(.system(size: 24))
           }
         }
       } else {
@@ -73,8 +75,10 @@ struct ExternalStorageIcon: View {
           Label("Settings", systemImage: "gear")
         }
         .labelStyle(.iconOnly)
+        .font(.system(size: 24))
       }
     }
+    .tint(Color.white)
     .task {
       await store.task()
     }
@@ -141,10 +145,12 @@ struct ExternalStorageDevicesView: View {
 
               Text(device.displayName ?? "Unknown")
             }
+            .font(.system(size: 18))
           }
         }
       }
     }
+    .tint(Color(uiColor: .label))
     .onAppear {
       store.startSubscribe()
     }

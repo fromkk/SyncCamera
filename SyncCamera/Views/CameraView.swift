@@ -1217,8 +1217,6 @@ struct CameraView: View {
 
           if AVExternalStorageDeviceDiscoverySession.isSupported {
             ExternalStorageIcon(store: store.externaoStorage)
-              .font(.system(size: 24))
-              .tint(Color.white)
           }
 
           Spacer()
