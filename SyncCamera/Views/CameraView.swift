@@ -81,6 +81,9 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     case focus
     case whiteBalance
   }
+
+  var externaoStorage: ExternalStorageIconStore = .init()
+
   // MARK: - Focus
 
   enum FocusMode: Hashable, CustomStringConvertible {
@@ -1200,6 +1203,10 @@ struct CameraView: View {
             }
           }
 
+          ExternalStorageIcon(store: store.externaoStorage)
+            .font(.system(size: 24))
+            .tint(Color.white)
+
           Spacer()
 
           // Shutter button in the middle
@@ -1214,6 +1221,9 @@ struct CameraView: View {
           .padding(.bottom, 16)
 
           Spacer()
+
+          Color.clear
+            .frame(width: 20, height: 20)
 
           // Sync button on the right
           if store.syncStore.isSyncing {
