@@ -1,4 +1,5 @@
 import AVFoundation
+import ImageCaptureCore
 import ImageIO
 import OSLog
 import Observation
@@ -81,6 +82,10 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
     case focus
     case whiteBalance
   }
+
+  var saveExternalStorageStore: ExternalStorageIconStore = .init()
+  var previewExternalStorageStore: ExternalStoragePhotosStore?
+
   // MARK: - Focus
 
   enum FocusMode: Hashable, CustomStringConvertible {
@@ -713,25 +718,36 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
       sendResourceIfNeeded(data)
       createThumbnail(data)
 
-      // Save with proper orientation metadata
-      PHPhotoLibrary.shared().performChanges {
-        let request = PHAssetCreationRequest.forAsset()
-        request.addResource(with: .photo, data: data, options: nil)
+      if let selectedDevice = saveExternalStorageStore.selectedDevice,
+        let url = try? selectedDevice.nextAvailableURLs(withPathExtensions: ["JPG"]).first,
+        url.startAccessingSecurityScopedResource()
+      {
+        defer {
+          url.stopAccessingSecurityScopedResource()
+        }
+        try? data.write(to: url)
+      } else {
+        // Save with proper orientation metadata
+        PHPhotoLibrary.shared().performChanges {
+          let request = PHAssetCreationRequest.forAsset()
+          request.addResource(with: .photo, data: data, options: nil)
 
-        // Set location and date if available
-        request.creationDate = Date()
-      } completionHandler: { [weak self] success, error in
-        if let error = error {
-          self?.logger.error(
-            "Failed to save photo: \(error.localizedDescription)"
-          )
-          DispatchQueue.main.async {
-            self?.error = error
+          // Set location and date if available
+          request.creationDate = Date()
+        } completionHandler: { [weak self] success, error in
+          if let error = error {
+            self?.logger.error(
+              "Failed to save photo: \(error.localizedDescription)"
+            )
+            DispatchQueue.main.async {
+              self?.error = error
+            }
+          } else if success {
+            self?.logger.info("Photo saved successfully")
           }
-        } else if success {
-          self?.logger.info("Photo saved successfully")
         }
       }
+
     }
   }
 
@@ -1176,8 +1192,18 @@ struct CameraView: View {
         HVStack {
           // Left placeholder to balance the sync button
           Button {
-            let url = URL(string: "photos-redirect://")!
-            openURL(url)
+            if let device = store.saveExternalStorageStore.selectedDevice,
+              let uuidString = device.uuid?.uuidString
+            {
+              store.previewExternalStorageStore = nil
+              store.previewExternalStorageStore = .init(
+                selectedUUID: uuidString,
+                externalDevicesClient: .liveValue
+              )
+            } else {
+              let url = URL(string: "photos-redirect://")!
+              openURL(url)
+            }
           } label: {
             AsyncImage(
               url: store.thumbnailURL,
@@ -1200,6 +1226,10 @@ struct CameraView: View {
             }
           }
 
+          if AVExternalStorageDeviceDiscoverySession.isSupported {
+            ExternalStorageIcon(store: store.saveExternalStorageStore)
+          }
+
           Spacer()
 
           // Shutter button in the middle
@@ -1214,6 +1244,11 @@ struct CameraView: View {
           .padding(.bottom, 16)
 
           Spacer()
+
+          if AVExternalStorageDeviceDiscoverySession.isSupported {
+            Color.clear
+              .frame(width: 20, height: 20)
+          }
 
           // Sync button on the right
           if store.syncStore.isSyncing {
@@ -1293,6 +1328,12 @@ struct CameraView: View {
     .sheet(isPresented: $store.isSyncViewPresented) {
       MultipeerBrowserView(store: store.syncStore)
     }
+    .sheet(
+      item: $store.previewExternalStorageStore,
+      content: { store in
+        ExternalStoragePhotosView(store: store)
+      }
+    )
     .alert(
       "\(store.syncStore.pendingInvitation?.peerID.displayName ?? "")からペアリングが届いています",
       isPresented: Binding(
