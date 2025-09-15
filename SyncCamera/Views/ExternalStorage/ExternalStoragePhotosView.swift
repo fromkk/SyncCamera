@@ -6,35 +6,44 @@ import SwiftUI
 final class ExternalStoragePhotosStore: NSObject, ICDeviceBrowserDelegate,
   ICDeviceDelegate, Identifiable
 {
+  enum Errors: Error {
+    case noSession
+  }
+
   private let logger = Logger(
     subsystem: Bundle.main.bundleIdentifier!,
     category: "ExternalStoragePhotosStore"
   )
-  var deviceBrowser: ICDeviceBrowser
 
   var id: String { selectedUUID }
   var selectedDevice: ICCameraDevice?
   var mediaFiles: [ICCameraFile] = []
+  var externalDevicesClient: ExternalDevicesClient
 
   let selectedUUID: String
-  init(deviceBrowser: ICDeviceBrowser, selectedUUID: String) {
-    self.deviceBrowser = deviceBrowser
+  init(selectedUUID: String, externalDevicesClient: ExternalDevicesClient) {
     self.selectedUUID = selectedUUID
+    self.externalDevicesClient = externalDevicesClient
   }
 
   func startSubscribe() async {
-    logger.info("\(#function)")
-    deviceBrowser.delegate = self
-    deviceBrowser.start()
-    Task {
-      await updateDevices()
+    logger.info("\(#function) \(String(describing: self.selectedUUID))")
+    guard await externalDevicesClient.requestPermission() else {
+      logger.info("no permission")
+      return
+    }
+    for await devices in externalDevicesClient.devices() {
+      logger.info("devices \(devices)")
+      if let device = devices.first(where: { $0.uuidString == selectedUUID }) {
+        self.selectedDevice = device
+        self.selectedDevice?.delegate = self
+        await updateDevices()
+      }
     }
   }
 
   func stopSubscribe() {
     logger.info("\(#function)")
-    selectedDevice?.requestCloseSession()
-    deviceBrowser.stop()
   }
 
   // MARK: - ICDeviceBrowserDelegate
@@ -62,42 +71,17 @@ final class ExternalStoragePhotosStore: NSObject, ICDeviceBrowserDelegate,
   }
 
   private func updateDevices() async {
-    guard
-      selectedDevice == nil,
-      let device = deviceBrowser.devices?.first(where: {
-        $0.uuidString == selectedUUID
-      }) as? ICCameraDevice
-    else {
-      logger.info("device not found")
+    guard let selectedDevice else {
+      logger.info("no selectedDevice")
       return
     }
-    logger.info(
-      "selectedDevice \(device.name ?? "") hasOpenSession \(device.hasOpenSession)"
-    )
-    self.selectedDevice = device
-    device.delegate = self
-    if device.hasOpenSession {
-      mediaFiles = device.mediaFiles?.compactMap { $0 as? ICCameraFile } ?? []
-    } else {
-      do {
-        try await device.requestOpenSession()
-        while device.contentCatalogPercentCompleted < 100 {
-          try await Task.sleep(for: .seconds(0.1))
-          logger.info(
-            "device.contentCatalogPercentCompleted \(device.contentCatalogPercentCompleted)"
-          )
-        }
-        mediaFiles = device.mediaFiles?.compactMap { $0 as? ICCameraFile } ?? []
-      } catch {
-        logger.error("error \(error.localizedDescription)")
-      }
-    }
+    let client = ExternalDeviceClient.liveValue
+    mediaFiles = (try? await client.mediaFiles(selectedDevice)) ?? []
   }
 
   // MARK: - ICDeviceDelegate
 
-  func device(_ device: ICDevice, didCloseSessionWithError error: (any Error)?)
-  {
+  func device(_ device: ICDevice, didCloseSessionWithError error: (any Error)?) {
     logger.error(
       "\(#function) device \(device.name ?? "") error \(error?.localizedDescription ?? "")"
     )
@@ -118,18 +102,22 @@ struct ExternalStoragePhotosView: View {
   @Bindable var store: ExternalStoragePhotosStore
 
   var body: some View {
-    Group {
-      if store.selectedDevice != nil {
-        ScrollView {
-          LazyVGrid(columns: Array(repeating: GridItem(), count: 3)) {
-            ForEach(store.mediaFiles, id: \.name) { mediaFile in
-              ExternalStoragePhotoView(mediaFile: mediaFile)
+    NavigationStack {
+      Group {
+        if store.selectedDevice != nil {
+          ScrollView {
+            LazyVGrid(columns: Array(repeating: GridItem(), count: 3)) {
+              ForEach(store.mediaFiles, id: \.name) { mediaFile in
+                ExternalStoragePhotoView(mediaFile: mediaFile)
+              }
             }
           }
+        } else {
+          ProgressView()
         }
-      } else {
-        ProgressView()
       }
+      .navigationBarTitleDisplayMode(.inline)
+      .navigationTitle("Media files")
     }
     .task {
       await store.startSubscribe()

@@ -36,29 +36,33 @@ struct ExternalStorageDevicesView: View {
   @Bindable var store: ExternalStorageDevicesStore
 
   var body: some View {
-    Group {
-      if store.devices.isEmpty {
-        Text("No Devices")
-      } else {
-        List(store.devices, id: \.uuid) { device in
-          Button {
-            if store.selectedDevice?.isEqual(device) ?? false {
-              store.selectedDevice = nil
-            } else {
-              store.selectedDevice = device
-            }
-          } label: {
-            HStack(spacing: 8) {
+    NavigationStack {
+      Group {
+        if store.devices.isEmpty {
+          Text("No Devices")
+        } else {
+          List(store.devices, id: \.uuid) { device in
+            Button {
               if store.selectedDevice?.isEqual(device) ?? false {
-                Image(systemName: "checkmark")
+                store.selectedDevice = nil
+              } else {
+                store.selectedDevice = device
               }
+            } label: {
+              HStack(spacing: 8) {
+                if store.selectedDevice?.isEqual(device) ?? false {
+                  Image(systemName: "checkmark")
+                }
 
-              Text(device.displayName ?? "Unknown")
+                Text(device.displayName ?? "Unknown")
+              }
+              .font(.system(size: 18))
             }
-            .font(.system(size: 18))
           }
         }
       }
+      .navigationBarTitleDisplayMode(.inline)
+      .navigationTitle("Devices")
     }
     .tint(Color(uiColor: .label))
     .onAppear {

@@ -84,7 +84,6 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
   }
 
   var saveExternalStorageStore: ExternalStorageIconStore = .init()
-  let deviceBrowser: ICDeviceBrowser = .init()
   var previewExternalStorageStore: ExternalStoragePhotosStore?
 
   // MARK: - Focus
@@ -719,8 +718,7 @@ final class CameraStore: NSObject, AVCapturePhotoCaptureDelegate, SyncDelegate {
       sendResourceIfNeeded(data)
       createThumbnail(data)
 
-      if
-        let selectedDevice = saveExternalStorageStore.selectedDevice,
+      if let selectedDevice = saveExternalStorageStore.selectedDevice,
         let url = try? selectedDevice.nextAvailableURLs(withPathExtensions: ["JPG"]).first,
         url.startAccessingSecurityScopedResource()
       {
@@ -1194,9 +1192,14 @@ struct CameraView: View {
         HVStack {
           // Left placeholder to balance the sync button
           Button {
-            if let device = store.saveExternalStorageStore.selectedDevice, let uuidString = device.uuid?.uuidString {
+            if let device = store.saveExternalStorageStore.selectedDevice,
+              let uuidString = device.uuid?.uuidString
+            {
               store.previewExternalStorageStore = nil
-              store.previewExternalStorageStore = .init(deviceBrowser: store.deviceBrowser, selectedUUID: uuidString)
+              store.previewExternalStorageStore = .init(
+                selectedUUID: uuidString,
+                externalDevicesClient: .liveValue
+              )
             } else {
               let url = URL(string: "photos-redirect://")!
               openURL(url)
@@ -1325,9 +1328,12 @@ struct CameraView: View {
     .sheet(isPresented: $store.isSyncViewPresented) {
       MultipeerBrowserView(store: store.syncStore)
     }
-    .sheet(item: $store.previewExternalStorageStore, content: { store in
-      ExternalStoragePhotosView(store: store)
-    })
+    .sheet(
+      item: $store.previewExternalStorageStore,
+      content: { store in
+        ExternalStoragePhotosView(store: store)
+      }
+    )
     .alert(
       "\(store.syncStore.pendingInvitation?.peerID.displayName ?? "")からペアリングが届いています",
       isPresented: Binding(
